@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<!-- GENERIERT von kurse/_build (web_security) – nicht direkt bearbeiten!
+     Quelle: kurse/_build/web_security/lessons/, bauen: python3 _build/build.py web_security -->
+<html lang="de">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2.4 &ndash; Authorization &amp; Access Control | Web Security &amp; Identity Kurs</title>
+  <script>(function () { var t = localStorage.getItem('kurs-theme') || 'dark'; document.documentElement.setAttribute('data-theme', t); })();</script>
+  <link rel="stylesheet" href="assets/kurs.css">
+  <link rel="stylesheet" id="hljs-theme"
+    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+
+<body>
+
+  <button class="hamburger" id="hamburger" aria-label="Navigation &ouml;ffnen">&#9776;</button>
+  <div class="sidebar-overlay" id="overlay"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <a href="index.html">
+        <span class="brand-icon">&#128274;</span>
+        <div>
+          <div class="brand-name">Web Security</div>
+          <div class="brand-sub">Web- und Mobile Computing</div>
+        </div>
+      </a>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Dark/Light Mode"
+        title="Theme wechseln">&#9728;</button>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group">
+        <div class="nav-group-label sec-label">Teil 1 &mdash; Konzepte</div>
+        <a class="nav-link" href="1.1-grundlagen.html"><span class="ln">1.1</span>Grundlagen der Web-Security</a>
+        <a class="nav-link" href="1.2-passwoerter.html"><span class="ln">1.2</span>Passwörter sicher speichern</a>
+        <a class="nav-link" href="1.3-sessions-cookies.html"><span class="ln">1.3</span>Sessions &amp; Cookies</a>
+        <a class="nav-link" href="1.4-jwt-tokens.html"><span class="ln">1.4</span>JWT &amp; Token-basierte Authentifizierung</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label secdev-label">Teil 2 &mdash; Umsetzung mit Next.js</div>
+        <a class="nav-link" href="2.1-login-sessions.html"><span class="ln">2.1</span>Login &amp; Sessions in Next.js</a>
+        <a class="nav-link" href="2.2-oauth-oidc-sso.html"><span class="ln">2.2</span>OAuth 2.0, OpenID Connect &amp; SSO</a>
+        <a class="nav-link" href="2.3-mfa-passkeys.html"><span class="ln">2.3</span>MFA, TOTP &amp; Passkeys</a>
+        <a class="nav-link" href="2.4-access-control.html"><span class="ln">2.4</span>Authorization &amp; Access Control</a>
+        <a class="nav-link" href="2.5-injection.html"><span class="ln">2.5</span>Injection &amp; unsichere Eingaben</a>
+        <a class="nav-link" href="2.6-xss-csrf.html"><span class="ln">2.6</span>XSS, CSRF &amp; Clickjacking</a>
+        <a class="nav-link" href="2.7-api-security.html"><span class="ln">2.7</span>API Security</a>
+        <a class="nav-link" href="2.8-secure-development.html"><span class="ln">2.8</span>Secure Development &amp; OWASP</a>
+      </div>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <header class="lesson-header">
+      <p class="lesson-eyebrow">Lektion 2.4 &mdash; Teil 2: Umsetzung mit Next.js</p>
+      <h1>Authorization &amp; Access Control</h1>
+      <div class="lesson-tags">
+        <span class="tag tag-secdev">Authorization</span>
+        <span class="tag tag-time">ca. 60 min</span>
+        <span class="tag tag-level">Grundlagen</span>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <section class="section section-lernziele">
+        <h2>Lernziele</h2>
+        <ul class="lernziele-list">
+          <li>Erklären, wo und wann Berechtigungen in einer Webanwendung geprüft werden müssen</li>
+          <li>Die Modelle ACL, RBAC und ABAC unterscheiden und für ein Szenario auswählen</li>
+          <li>Das Principle of Least Privilege auf Benutzer und technische Komponenten anwenden</li>
+          <li>Funktionsebene und Ressourcenebene der Autorisierung unterscheiden</li>
+          <li>Broken Access Control, IDOR sowie horizontale und vertikale Privilege Escalation erkennen</li>
+          <li>Mass Assignment erklären und verhindern</li>
+                  <li>RBAC, Prüfung auf Ressourcenebene und Deny by Default mit Middleware in Next.js umsetzen</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>1 — Wo Autorisierung stattfindet</h2>
+        <p>
+          Nach der Authentication (Lektionen 1.2–1.4 und 2.1–2.3) weiß die Anwendung, <em>wer</em> anfragt. Bei jeder
+          einzelnen Anfrage muss sie nun entscheiden, ob diese Person die gewünschte Aktion auf der
+          gewünschten Ressource ausführen darf. <strong>Broken Access Control</strong> – also fehlende oder
+          fehlerhafte Berechtigungsprüfungen – steht auf Platz 1 der OWASP Top 10.
+        </p>
+        <div class="do-dont">
+          <div class="do-box">
+            <h4>DO</h4>
+            <ul>
+              <li>Berechtigungen <strong>am Server</strong> prüfen, bei <strong>jeder</strong> Anfrage</li>
+              <li><strong>Deny by Default:</strong> Was nicht ausdrücklich erlaubt ist, ist verboten</li>
+              <li>Prüfungen an <strong>zentraler Stelle</strong> umsetzen (Middleware, Policy-Klasse), nicht in jeder Funktion neu</li>
+            </ul>
+          </div>
+          <div class="dont-box">
+            <h4>DON'T</h4>
+            <ul>
+              <li>Admin-Menüs nur im Frontend ausblenden</li>
+              <li>Darauf vertrauen, dass niemand eine URL errät</li>
+              <li>Rolle oder Benutzer-ID aus einem Request-Parameter übernehmen</li>
+            </ul>
+          </div>
+        </div>
+        <div class="callout callout-info">
+  <div class="callout-icon">&#8505;</div>
+  <div class="callout-body">
+    <div class="callout-title">Frontend vs. Backend</div>
+    <p>Das Frontend darf Buttons, die der Benutzer ohnehin nicht nutzen darf, gerne ausblenden – das
+          verbessert die Bedienung. Die eigentliche Sicherheitsentscheidung trifft aber immer der Server
+          (Lektion 1.1: Never trust the client).</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>2 — Access-Control-Modelle: ACL, RBAC, ABAC</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Modell</th><th>Prinzip</th><th>Beispiel</th><th>Stärken / Schwächen</th></tr></thead>
+            <tbody>
+              <tr><td><strong>ACL</strong><br>Access Control List</td><td>An jeder Ressource hängt eine Liste: wer darf was?</td><td>Dateirechte; ein geteiltes Dokument: „Anna: bearbeiten, Ben: lesen“</td><td>sehr fein steuerbar; bei vielen Benutzern und Ressourcen schwer zu überblicken</td></tr>
+              <tr><td><strong>RBAC</strong><br>Role-Based Access Control</td><td>Berechtigungen werden <strong>Rollen</strong> zugeordnet, Benutzer erhalten Rollen</td><td>Rollen „Schüler“, „Lehrer“, „Admin“ in einem Schulportal</td><td>einfach zu verstehen und zu verwalten; bei vielen Sonderfällen entsteht eine Rollenexplosion</td></tr>
+              <tr><td><strong>ABAC</strong><br>Attribute-Based Access Control</td><td>Entscheidung anhand von <strong>Attributen</strong> des Benutzers, der Ressource und des Kontexts</td><td>„Lehrkräfte dürfen Noten ihrer eigenen Klassen bearbeiten, aber nur bis Semesterende“</td><td>sehr flexibel; Regeln werden komplex und müssen gut getestet werden</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>In der Praxis werden Modelle kombiniert, z.&nbsp;B. RBAC für die groben Rechte und ABAC-Regeln für Bedingungen wie Eigentum oder Zeit.</p>
+        <h3>Rollen und Berechtigungen trennen</h3>
+        <p>
+          Gutes <strong>Permission Management</strong> prüft im Code nicht die Rolle („ist Admin?“), sondern eine
+          konkrete <strong>Berechtigung</strong> („darf <code>grades:edit</code>?“). Welche Rolle welche
+          Berechtigungen hat, wird an einer Stelle konfiguriert. Neue Rollen lassen sich so ohne Codeänderung
+          einführen.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Berechtigung</th><th>Schüler</th><th>Lehrer</th><th>Admin</th></tr></thead>
+            <tbody>
+              <tr><td><code>grades:read-own</code></td><td>✔</td><td>–</td><td>–</td></tr>
+              <tr><td><code>grades:edit</code></td><td>–</td><td>✔ (nur eigene Klassen – ABAC-Regel)</td><td>–</td></tr>
+              <tr><td><code>users:manage</code></td><td>–</td><td>–</td><td>✔</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>3 — Principle of Least Privilege</h2>
+        <p>Jede Person und jede technische Komponente erhält <strong>nur die Rechte, die sie für ihre Aufgabe braucht</strong> – und nur so lange, wie sie sie braucht.</p>
+        <ul>
+          <li><strong>Benutzer:</strong> Neue Konten starten mit minimalen Rechten; Admin-Rechte nur für wenige Personen, idealerweise mit getrenntem Admin-Konto.</li>
+          <li><strong>Datenbank:</strong> Die Anwendung verbindet sich mit einem Datenbank-User, der nur die nötigen Tabellen lesen/schreiben darf – nicht als Datenbank-Administrator.</li>
+          <li><strong>Dienste und Tokens:</strong> API-Keys und OAuth-Scopes so eng wie möglich (Lektion 2.2).</li>
+          <li><strong>Zeitlich:</strong> Rechte bei Rollenwechsel oder Austritt entziehen; Berechtigungen regelmäßig überprüfen.</li>
+          <li><strong>Separation of Duties:</strong> Kritische Vorgänge brauchen zwei Personen (z.&nbsp;B. eine Überweisung anlegen und freigeben).</li>
+        </ul>
+        <p>Least Privilege begrenzt den Schaden, wenn etwas schiefgeht: Eine SQL Injection über einen eingeschränkten Datenbank-User kann keine Tabellen löschen (Lektion 2.5).</p>
+      </section>
+
+      <section class="section">
+        <h2>4 — Resource-Level Authorization</h2>
+        <p>Autorisierung findet auf zwei Ebenen statt – und beide müssen geprüft werden:</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Ebene</th><th>Frage</th><th>Beispiel</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Funktionsebene</strong></td><td>Darf der Benutzer diese <em>Funktion</em> überhaupt verwenden?</td><td>Nur Kunden dürfen „Bestellungen ansehen“ aufrufen.</td></tr>
+              <tr><td><strong>Ressourcenebene</strong> (Objektebene)</td><td>Darf der Benutzer auf <em>dieses konkrete Objekt</em> zugreifen?</td><td>Kunde 42 darf Bestellung 1001 sehen, weil sie ihm gehört – Bestellung 1002 von Kunde 77 nicht.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          Die Prüfung auf Ressourcenebene wird besonders oft vergessen: Die Funktion „Bestellung anzeigen“
+          ist korrekt nur für Kunden freigegeben, lädt dann aber jede beliebige Bestellung, deren Nummer in
+          der Anfrage steht. Richtig ist, beim Laden immer auch den Eigentümer zu berücksichtigen:
+          „Lade Bestellung 1001, <strong>sofern sie Kunde 42 gehört</strong>“.
+        </p>
+        <div class="callout callout-tip">
+  <div class="callout-icon">&#128161;</div>
+  <div class="callout-body">
+    <div class="callout-title">Mandantenfähige Anwendungen</div>
+    <p>Bei Software, die viele Firmen oder Schulen (Mandanten, engl. <em>Tenants</em>) gemeinsam nutzen,
+          muss jede Datenbankabfrage zusätzlich auf den Mandanten des Benutzers eingeschränkt sein. Ein
+          fehlender Filter legt sonst die Daten aller Kunden offen.</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>5 — Broken Access Control und IDOR</h2>
+        <p>
+          Eine <strong>Insecure Direct Object Reference (IDOR)</strong> liegt vor, wenn eine Anwendung eine
+          Objekt-ID aus der Anfrage verwendet, ohne die Berechtigung auf Ressourcenebene zu prüfen.
+        </p>
+        <ol>
+          <li>Eine Kundin sieht ihre Rechnung unter <code>/invoices/1001</code>.</li>
+          <li>Sie ändert die Adresse auf <code>/invoices/1002</code>.</li>
+          <li>Der Server liefert die Rechnung eines anderen Kunden – inklusive Name, Adresse und gekaufter Artikel.</li>
+        </ol>
+        <p>Dasselbe gilt für APIs (<code>GET /api/users/77</code>), Datei-Downloads, Formularfelder mit IDs und für <em>schreibende</em> Zugriffe: Ändern oder Löschen fremder Objekte.</p>
+        <div class="callout callout-warning">
+  <div class="callout-icon">&#9888;</div>
+  <div class="callout-body">
+    <div class="callout-title">Zufällige IDs sind kein Ersatz</div>
+    <p>Lange, zufällige IDs (UUIDs) statt fortlaufender Nummern erschweren das Erraten und sind eine
+          sinnvolle Zusatzmaßnahme. Sie ersetzen aber <strong>nicht</strong> die Berechtigungsprüfung – IDs
+          tauchen in Links, Logs und geteilten URLs auf.</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>6 — Horizontale und vertikale Privilege Escalation</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Art</th><th>Beschreibung</th><th>Beispiel</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Horizontale</strong> Privilege Escalation</td><td>Zugriff auf Daten oder Funktionen <strong>anderer Benutzer derselben Stufe</strong></td><td>Ein Schüler liest die Noten eines Mitschülers (typisch: IDOR).</td></tr>
+              <tr><td><strong>Vertikale</strong> Privilege Escalation</td><td>Zugriff auf Funktionen einer <strong>höheren Berechtigungsstufe</strong></td><td>Ein Schüler ruft <code>/admin/users</code> direkt auf und kann Konten löschen, weil nur der Menüpunkt ausgeblendet war.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Typische Ursachen vertikaler Eskalation:</p>
+        <ul>
+          <li>Admin-Seiten oder -Endpunkte sind nur „versteckt“, nicht geschützt (<strong>Forced Browsing</strong>).</li>
+          <li>Die Rolle wird aus einem Cookie, Formularfeld oder ungeprüften Token-Claim übernommen.</li>
+          <li>Nur die Seite ist geschützt, nicht die API, die sie aufruft.</li>
+          <li>Ein Benutzer kann seine eigene Rolle über das Profilformular ändern (Abschnitt 7).</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>7 — Mass Assignment</h2>
+        <p>
+          Viele Frameworks erlauben es, alle Felder einer Anfrage mit einer einzigen Anweisung auf ein
+          Datenbankobjekt zu übertragen. Das ist bequem – und gefährlich: Das Profilformular enthält nur
+          „Name“ und „E-Mail“, ein Angreifer schickt aber zusätzlich ein Feld <code>role</code> mit dem Wert
+          <code>admin</code> oder <code>balance</code> mit 10000 mit. Wird alles ungefiltert übernommen,
+          hat er sich selbst befördert. Man spricht von <strong>Mass Assignment</strong>.
+        </p>
+        <ul>
+          <li>Pro Anwendungsfall festlegen, <strong>welche Felder</strong> geändert werden dürfen (Allowlist).</li>
+          <li>Eigene Datenobjekte für Ein- und Ausgabe verwenden (DTOs, Schemas), nicht direkt die Datenbankentität.</li>
+          <li>Unbekannte Felder ablehnen statt still zu ignorieren – das macht Angriffe sichtbar.</li>
+        </ul>
+        <div class="callout callout-info">
+  <div class="callout-icon">&#8505;</div>
+  <div class="callout-body">
+    <div class="callout-title">Auch die Ausgabe zählt</div>
+    <p>Das Gegenstück ist <strong>Excessive Data Exposure</strong>: Die API gibt das ganze Benutzerobjekt
+          inklusive Passwort-Hash und interner Felder zurück, und das Frontend zeigt nur den Namen an. Auch
+          Antworten sollten nur die Felder enthalten, die der Empfänger sehen darf (Lektion 2.7).</p>
+  </div>
+</div>
+      </section>
+
+            <section class="section">
+        <h2>8 — Umsetzung: Rollen und Berechtigungen</h2>
+        <p>Das FlugBoard hat drei Rollen: Passagiere verwalten ihre Buchungen, das Personal pflegt Flüge, Admins verwalten Benutzer. Dazu kommen neue Spalten und eine Tabelle für Buchungen:</p>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/db/schema.ts (Änderungen)</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">// users:
+displayName: text('display_name'), // NEU
+terminal: text('terminal'), // NEU: Einsatzort von Mitarbeitenden (ABAC)
+
+// NEU: Buchungen gehören genau einem Benutzer
+export const bookings = sqliteTable('bookings', {
+  id: text('id').primaryKey(), // zufällige UUID
+  userId: integer('user_id').notNull().references(() =&gt; users.id, { onDelete: 'cascade' }),
+  flightId: integer('flight_id').notNull().references(() =&gt; flights.id),
+  seat: text('seat'),
+});</code></pre>
+</div>
+        <h3>RBAC an einer Stelle</h3>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/lib/permissions.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import { notFound } from 'next/navigation';
+
+import { type CurrentUser, requireUser } from './auth';
+
+export type Role = CurrentUser['role'];
+
+export type Permission =
+  | 'bookings:read-own'
+  | 'flights:edit'
+  | 'users:manage';
+
+// RBAC: Welche Rolle hat welche Berechtigungen? – an genau einer Stelle
+const ROLE_PERMISSIONS: Record&lt;Role, readonly Permission[]&gt; = {
+  passenger: ['bookings:read-own'],
+  staff: ['bookings:read-own', 'flights:edit'],
+  admin: ['bookings:read-own', 'flights:edit', 'users:manage'],
+};
+
+export function can(user: CurrentUser, permission: Permission): boolean {
+  return ROLE_PERMISSIONS[user.role].includes(permission);
+}
+
+/** Für Seiten: ohne Berechtigung so tun, als gäbe es die Seite nicht. */
+export async function requirePermission(permission: Permission): Promise&lt;CurrentUser&gt; {
+  const user = await requireUser();
+  if (!can(user, permission)) notFound();
+  return user;
+}</code></pre>
+</div>
+        <p>Der Code prüft Berechtigungen (<code>'users:manage'</code>), nicht Rollen. Eine neue Rolle „Support“ braucht nur einen Eintrag in <code>ROLE_PERMISSIONS</code>. <code>notFound()</code> zeigt die 404-Seite – Unbefugte erfahren nicht einmal, dass es die Seite gibt.</p>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/app/admin/users/page.tsx</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import { db } from '@/db';
+import { users } from '@/db/schema';
+import { requirePermission } from '@/lib/permissions';
+
+export default async function AdminUsersPage() {
+  await requirePermission('users:manage'); // Funktionsebene – am Server!
+
+  const allUsers = db.select({ id: users.id, email: users.email, role: users.role })
+    .from(users).all();
+
+  return (
+    &lt;main&gt;
+      &lt;h1&gt;Benutzerverwaltung&lt;/h1&gt;
+      &lt;ul&gt;
+        {allUsers.map((u) =&gt; &lt;li key={u.id}&gt;{u.email} – {u.role}&lt;/li&gt;)}
+      &lt;/ul&gt;
+    &lt;/main&gt;
+  );
+}</code></pre>
+</div>
+
+        <h3>ABAC-Regel für Flüge</h3>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/lib/policies.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import { can } from './permissions';
+import type { CurrentUser } from './auth';
+
+interface StaffUser extends CurrentUser {
+  terminal: string | null;
+}
+
+interface FlightRef {
+  terminal: string;
+}
+
+/**
+ * ABAC-Regel: Admins dürfen jeden Flug bearbeiten,
+ * Mitarbeitende nur Flüge ihres eigenen Terminals.
+ */
+export function canEditFlight(user: StaffUser, flight: FlightRef): boolean {
+  if (!can(user, 'flights:edit')) return false;
+  if (user.role === 'admin') return true;
+  return user.terminal !== null &amp;&amp; user.terminal === flight.terminal;
+}</code></pre>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>9 — Umsetzung: Resource-Level Authorization gegen IDOR</h2>
+        <p>Die wichtigste Regel steckt direkt in der Datenbankabfrage: Eine Buchung wird nur gefunden, wenn ID <strong>und</strong> Eigentümer passen.</p>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/lib/bookings.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import { and, eq } from 'drizzle-orm';
+
+import { db } from '@/db';
+import { bookings } from '@/db/schema';
+
+/** Lädt eine Buchung NUR, wenn sie dem Benutzer gehört (Resource-Level). */
+export function getBookingForUser(bookingId: string, userId: number) {
+  return db.select().from(bookings)
+    .where(and(eq(bookings.id, bookingId), eq(bookings.userId, userId)))
+    .get();
+}
+
+export function deleteBookingForUser(bookingId: string, userId: number) {
+  return db.delete(bookings)
+    .where(and(eq(bookings.id, bookingId), eq(bookings.userId, userId)))
+    .returning({ id: bookings.id })
+    .get();
+}</code></pre>
+</div>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/app/api/bookings/[id]/route.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import { NextResponse } from 'next/server';
+
+import { getCurrentUser } from '@/lib/auth';
+import { deleteBookingForUser, getBookingForUser } from '@/lib/bookings';
+import { can } from '@/lib/permissions';
+
+interface RouteParams {
+  params: Promise&lt;{ id: string }&gt;;
+}
+
+// GET /api/bookings/:id
+export async function GET(_request: Request, { params }: RouteParams) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: 'Nicht angemeldet' }, { status: 401 });
+  if (!can(user, 'bookings:read-own')) {
+    return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 });
+  }
+
+  const { id } = await params;
+  const booking = getBookingForUser(id, user.id);
+  // Fremde und nicht existierende Buchungen sind von außen nicht unterscheidbar
+  if (!booking) return NextResponse.json({ error: 'Nicht gefunden' }, { status: 404 });
+
+  return NextResponse.json({ id: booking.id, flightId: booking.flightId, seat: booking.seat });
+}
+
+// DELETE /api/bookings/:id – auch schreibende Zugriffe auf Ressourcenebene prüfen
+export async function DELETE(_request: Request, { params }: RouteParams) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: 'Nicht angemeldet' }, { status: 401 });
+
+  const { id } = await params;
+  const deleted = deleteBookingForUser(id, user.id);
+  if (!deleted) return NextResponse.json({ error: 'Nicht gefunden' }, { status: 404 });
+  return new NextResponse(null, { status: 204 });
+}</code></pre>
+</div>
+        <ul>
+          <li>Ohne Login: <strong>401</strong>. Ohne Berechtigung für die Funktion: <strong>403</strong>.</li>
+          <li>Fremde Buchung: <strong>404</strong> – genau wie bei einer ID, die es nicht gibt. So lässt sich nicht einmal herausfinden, welche Buchungs-IDs existieren.</li>
+          <li>Die Antwort enthält nur ausgewählte Felder, nicht die <code>userId</code>.</li>
+          <li><code>DELETE</code> prüft den Eigentümer ebenfalls – schreibende Zugriffe werden besonders oft vergessen.</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>10 — Umsetzung: Deny by Default mit Middleware</h2>
+        <p>
+          Eine <strong>Middleware</strong> ist in Next.js eine Funktion in <code>src/middleware.ts</code>, die vor
+          <em>jeder</em> passenden Anfrage läuft – noch bevor eine Seite oder ein Route Handler aufgerufen wird.
+          Über <code>config.matcher</code> legt man fest, für welche Pfade sie gilt. Sie kann die Anfrage
+          weiterleiten (<code>NextResponse.next()</code>), umleiten oder selbst beantworten.
+        </p>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/middleware.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import { type NextRequest, NextResponse } from 'next/server';
+
+// Deny by Default: Nur diese Pfade sind ohne Login erreichbar
+const PUBLIC_PATHS = ['/', '/login', '/register', '/departures', '/arrivals'];
+
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const isPublic = PUBLIC_PATHS.includes(pathname) || pathname.startsWith('/login/');
+
+  // Nur eine schnelle Vorprüfung, ob überhaupt ein Session-Cookie existiert.
+  // Ob die Session gültig ist und was der Benutzer darf, prüfen Seiten und
+  // Route Handler selbst (getCurrentUser, requirePermission).
+  if (!isPublic &amp;&amp; !request.cookies.has('session')) {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Nicht angemeldet' }, { status: 401 });
+    }
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+  return NextResponse.next();
+}
+
+export const config = {
+  // für alle Pfade außer statischen Dateien von Next.js
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+};</code></pre>
+</div>
+        <div class="callout callout-warning">
+  <div class="callout-icon">&#9888;</div>
+  <div class="callout-body">
+    <div class="callout-title">Middleware ist nur die erste Schicht</div>
+    <p>Die Middleware prüft nur, ob ein Session-Cookie <em>existiert</em> – nicht, ob es gültig ist, und
+          schon gar nicht, was der Benutzer darf. Sie sorgt dafür, dass ein vergessener Check nicht sofort
+          zum Datenleck wird (Deny by Default). Die eigentliche Prüfung bleibt in jeder Seite und jedem Route
+          Handler (Defense in Depth).</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>11 — Umsetzung: Mass Assignment verhindern</h2>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">So nicht!</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">// Übernimmt ALLE Formularfelder – auch ein eingeschmuggeltes "role"
+await db.update(users).set(Object.fromEntries(formData)).where(eq(users.id, user.id));</code></pre>
+</div>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/actions/profile-actions.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">'use server';
+
+import { eq } from 'drizzle-orm';
+import { redirect } from 'next/navigation';
+import { z } from 'zod';
+
+import { db } from '@/db';
+import { users } from '@/db/schema';
+import { requireUser } from '@/lib/auth';
+
+// Allowlist: nur dieses Feld darf über das Profilformular geändert werden
+const profileSchema = z.object({
+  displayName: z.string().trim().min(1).max(50),
+});
+
+export async function updateProfile(formData: FormData) {
+  const user = await requireUser();
+
+  // Gezielt nur die erlaubten Felder lesen – nie alle Formularfelder übernehmen
+  const parsed = profileSchema.safeParse({ displayName: formData.get('displayName') });
+  if (!parsed.success) redirect('/konto?error=profile');
+
+  await db.update(users).set(parsed.data).where(eq(users.id, user.id));
+  redirect('/konto');
+}</code></pre>
+</div>
+        <p>Die Benutzer-ID kommt aus der Session (<code>requireUser()</code>), nie aus dem Formular – sonst könnte jeder fremde Profile ändern.</p>
+      </section>
+
+      <section class="section section-fehler">
+        <h2>Häufige Fehler</h2>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: Nur Funktionsebene geprüft</div>
+  <p>Der Endpunkt „Rechnung herunterladen“ prüft korrekt, dass der Benutzer angemeldet und Kunde ist – lädt dann aber jede Rechnung, deren ID übergeben wird.</p>
+          <p class="fehler-fix">Bei jedem Zugriff auf ein Objekt den Eigentümer bzw. die Berechtigung auf genau dieses Objekt prüfen, idealerweise direkt in der Datenbankabfrage.</p>
+</div>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: Rolle aus dem Request</div>
+  <p>Das Frontend schickt bei jeder Anfrage ein Feld <code>isAdmin: true/false</code> mit, und der Server verlässt sich darauf.</p>
+          <p class="fehler-fix">Rolle und Berechtigungen ausschließlich serverseitig aus Session oder verifiziertem Token bestimmen.</p>
+</div>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: Neue Endpunkte offen per Default</div>
+  <p>Jeder Endpunkt muss einzeln mit einer Prüfung versehen werden. Beim neuen Export-Endpunkt wurde sie vergessen – alle Daten sind öffentlich abrufbar.</p>
+          <p class="fehler-fix">Deny by Default: Alle Endpunkte sind zentral geschützt; öffentliche Endpunkte müssen ausdrücklich freigegeben werden.</p>
+</div>
+      </section>
+
+      <section class="section section-aufgaben">
+        <h2>Aufgaben</h2>
+        <div class="aufgaben-list">
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 1</span>
+    <span class="aufgabe-title">Modell wählen</span>
+  </div>
+  <p>Welches Access-Control-Modell (ACL, RBAC, ABAC oder eine Kombination) passt am besten? Begründe: (a) ein Online-Speicher, in dem Dateien mit einzelnen Personen geteilt werden, (b) ein Webshop mit Kunden, Support und Admins, (c) ein Krankenhaus-System, in dem Ärzte nur Patienten ihrer Station während ihrer Dienstzeit sehen dürfen.</p>
+</div>
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 2</span>
+    <span class="aufgabe-title">Flug bearbeiten</span>
+  </div>
+  <p>Schreibe eine Server Action <code>updateFlightTime(flightId, formData)</code>, mit der Personal die Abflugzeit ändern kann. Lade den Flug, prüfe mit <code>canEditFlight</code> und validiere die Uhrzeit mit Zod. Teste mit einem Admin, einer Mitarbeiterin von Terminal 1 und einem Mitarbeiter von Terminal 2.</p>
+</div>
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 3</span>
+    <span class="aufgabe-title">Eskalation erkennen</span>
+  </div>
+  <p>Entscheide, ob horizontale oder vertikale Privilege Escalation vorliegt, und nenne die Gegenmaßnahme: (a) Ein Kunde storniert über die API die Bestellung eines anderen Kunden. (b) Ein Benutzer fügt beim Registrieren das Feld <code>role=admin</code> hinzu. (c) Eine Lehrerin sieht über eine geänderte URL die Noten einer fremden Klasse.</p>
+</div>
+          <div class="aufgabe aufgabe-bonus">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Bonus</span>
+    <span class="aufgabe-title">Testfälle schreiben</span>
+  </div>
+  <p>Formuliere für den Endpunkt „Bestellung anzeigen“ fünf Testfälle in Worten (Benutzer, Anfrage, erwartetes Ergebnis inkl. Statuscode), die zusammen sicherstellen, dass weder IDOR noch vertikale Eskalation möglich ist.</p>
+</div>
+        </div>
+      </section>
+
+      <section class="section section-quiz">
+        <h2>Wissenskontrolle</h2>
+        <div class="quiz" id="quiz-1">
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 1</span> In einem System gilt: „Lehrkräfte dürfen nur die Noten ihrer eigenen Klassen und nur bis Semesterende ändern.“ Welches Modell bildet das am direktesten ab?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>ACL</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>RBAC</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-1"> <span>ABAC</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Keines, das ist nicht modellierbar</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Die Regel hängt von Attributen ab: Rolle und Klassen der Lehrkraft (Benutzer), Klasse der Note (Ressource) und Datum (Kontext). Reines RBAC kennt nur „Lehrer darf Noten ändern“, eine ACL müsste jede Note einzeln pflegen.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 2</span> Ein Benutzer ändert in der URL <code>/orders/1001</code> auf <code>/orders/1002</code> und sieht eine fremde Bestellung. Wie nennt man das?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Vertikale Privilege Escalation durch SQL Injection</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-2"> <span>IDOR – eine horizontale Privilege Escalation</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Session Fixation</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Mass Assignment</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Die Anwendung verwendet die Objekt-ID ohne Prüfung auf Ressourcenebene (Insecure Direct Object Reference). Der Benutzer bleibt auf derselben Berechtigungsstufe, greift aber auf Daten eines anderen Benutzers zu – also horizontal.</div>
+  </div>
+  <div class="quiz-frage" data-multi="1">
+    <p class="quiz-q"><span class="quiz-num">Frage 3</span> Welche Maßnahmen verhindern IDOR wirksam?</p>
+    <p class="quiz-hint">Mehrere Antworten sind richtig.</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-3"> <span>Bei jedem Zugriff prüfen, ob das Objekt dem anfragenden Benutzer gehört bzw. er berechtigt ist</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-3"> <span>Nur zufällige UUIDs statt fortlaufender IDs verwenden, ohne weitere Prüfung</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-3"> <span>Datenbankabfragen grundsätzlich auf den angemeldeten Benutzer bzw. Mandanten einschränken</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-3"> <span>Den Link zur Bestellung im Frontend ausblenden</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Wirksam ist nur die serverseitige Prüfung auf Ressourcenebene, am besten direkt in der Abfrage. UUIDs erschweren das Raten, sind aber kein Schutz, wenn eine ID bekannt wird. Ausblenden im Frontend hindert niemanden daran, die Anfrage selbst zu schicken.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 4</span> Ein Profilformular schickt Name und E-Mail. Ein Angreifer ergänzt <code>role=admin</code> und ist danach Administrator. Welche Schwachstelle liegt vor?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Cross-Site Scripting</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-4"> <span>Mass Assignment</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Credential Stuffing</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Path Traversal</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Der Server überträgt alle Felder der Anfrage ungefiltert auf das Benutzerobjekt. Lösung: Pro Anwendungsfall eine Allowlist erlaubter Felder bzw. eigene Ein-/Ausgabeobjekte (DTOs) verwenden.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 5</span> Was bedeutet <strong>Deny by Default</strong>?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span>Alle Anfragen werden standardmäßig abgelehnt, auch berechtigte</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-5"> <span>Zugriff ist verboten, solange er nicht ausdrücklich erlaubt wurde</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span>Fehlgeschlagene Logins führen zur dauerhaften Sperre</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span>Der Server antwortet immer mit 404</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Deny by Default heißt: Ohne passende Erlaubnis keine Freigabe. So führt ein vergessener Check bei einem neuen Endpunkt zu einem Fehler beim Testen statt zu einem Datenleck.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 6</span> Die Middleware des FlugBoards lässt eine Anfrage durch, weil ein Cookie <code>session</code> existiert. Was folgt daraus?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span>Der Benutzer ist angemeldet und darf alles</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span>Der Benutzer ist angemeldet, die Rolle muss aber noch geprüft werden</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-6"> <span>Noch gar nichts Sicheres – Gültigkeit der Session und Berechtigungen prüfen Seite bzw. Route Handler</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span>Die Anfrage stammt sicher nicht von einer fremden Website</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Ein Cookie mit dem Namen <code>session</code> kann jeder selbst setzen. Die Middleware ist nur eine schnelle Vorprüfung für Deny by Default. <code>getCurrentUser()</code> prüft die Session in der Datenbank, <code>can()</code> bzw. die Abfrage mit Eigentümer prüfen die Berechtigung.</div>
+  </div>
+  <div class="quiz-summary"><span class="quiz-score"></span><button type="button" class="quiz-reset">Zur&uuml;cksetzen</button></div>
+</div>
+      </section>
+
+    </div>
+
+    <nav class="lesson-nav">
+      <a class="nav-btn" href="2.3-mfa-passkeys.html">&larr; Lektion 2.3: MFA, TOTP &amp; Passkeys</a>
+      <span class="nav-center-info">Lektion 2.4</span>
+      <a class="nav-btn primary" href="2.5-injection.html">Lektion 2.5: Injection &amp; unsichere Eingaben &rarr;</a>
+    </nav>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>
+    const ham = document.getElementById('hamburger');
+    const sb = document.getElementById('sidebar');
+    const ov = document.getElementById('overlay');
+    ham.addEventListener('click', () => { sb.classList.toggle('open'); ov.classList.toggle('visible'); });
+    ov.addEventListener('click', () => { sb.classList.remove('open'); ov.classList.remove('visible'); });
+    const cur = window.location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.nav-link').forEach(l => {
+      if (l.getAttribute('href') === cur) l.classList.add('active');
+    });
+    const themeBtn = document.getElementById('theme-toggle');
+    const applyTheme = (t) => {
+      document.documentElement.setAttribute('data-theme', t);
+      if (themeBtn) themeBtn.innerHTML = t === 'dark' ? '&#9728;' : '&#9790;';
+    };
+    applyTheme(localStorage.getItem('kurs-theme') || 'dark');
+    setTimeout(() => document.documentElement.classList.add('theme-transitions'), 50);
+    if (themeBtn) themeBtn.addEventListener('click', () => {
+      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('kurs-theme', next);
+      applyTheme(next);
+    });
+    hljs.highlightAll();
+  </script>
+  <script>
+    document.querySelectorAll('.quiz').forEach((quiz) => {
+      const fragen = [...quiz.querySelectorAll('.quiz-frage')];
+      const score = quiz.querySelector('.quiz-score');
+      const update = () => {
+        const done = fragen.filter((f) => f.dataset.state).length;
+        const ok = fragen.filter((f) => f.dataset.state === 'ok').length;
+        score.textContent = done === 0
+          ? fragen.length + ' Fragen – wähle eine Antwort und prüfe sie.'
+          : ok + ' von ' + fragen.length + ' richtig'
+            + (done < fragen.length ? ' (' + done + ' von ' + fragen.length + ' bearbeitet)' : '');
+      };
+      fragen.forEach((f) => {
+        const inputs = [...f.querySelectorAll('input')];
+        const check = f.querySelector('.quiz-check');
+        const reveal = f.querySelector('.quiz-reveal');
+        const fb = f.querySelector('.quiz-feedback');
+        const exp = f.querySelector('.quiz-erklaerung');
+        inputs.forEach((i) => i.addEventListener('change', () => {
+          check.disabled = !inputs.some((x) => x.checked);
+        }));
+        const finish = (graded) => {
+          let allOk = true;
+          f.querySelectorAll('.quiz-opt').forEach((li) => {
+            const input = li.querySelector('input');
+            const corr = li.dataset.correct === '1';
+            if (corr !== input.checked) allOk = false;
+            if (corr) li.classList.add('opt-correct');
+            else if (input.checked) li.classList.add('opt-wrong');
+            input.disabled = true;
+          });
+          f.dataset.state = !graded ? 'shown' : (allOk ? 'ok' : 'wrong');
+          fb.className = 'quiz-feedback fb-' + f.dataset.state;
+          fb.textContent = !graded ? 'Lösung angezeigt.'
+            : (allOk ? '✔ Richtig!' : '✘ Leider nicht ganz – die richtige Lösung ist markiert.');
+          fb.hidden = false;
+          exp.hidden = false;
+          check.disabled = true;
+          reveal.disabled = true;
+          update();
+        };
+        check.addEventListener('click', () => finish(true));
+        reveal.addEventListener('click', () => finish(false));
+      });
+      quiz.querySelector('.quiz-reset').addEventListener('click', () => {
+        fragen.forEach((f) => {
+          delete f.dataset.state;
+          f.querySelectorAll('.quiz-opt').forEach((li) => li.classList.remove('opt-correct', 'opt-wrong'));
+          f.querySelectorAll('input').forEach((i) => { i.checked = false; i.disabled = false; });
+          f.querySelector('.quiz-check').disabled = true;
+          f.querySelector('.quiz-reveal').disabled = false;
+          f.querySelector('.quiz-feedback').hidden = true;
+          f.querySelector('.quiz-erklaerung').hidden = true;
+        });
+        update();
+      });
+      update();
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<!-- GENERIERT von kurse/_build (web_security) – nicht direkt bearbeiten!
+     Quelle: kurse/_build/web_security/lessons/, bauen: python3 _build/build.py web_security -->
+<html lang="de">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2.6 &ndash; XSS, CSRF &amp; Clickjacking | Web Security &amp; Identity Kurs</title>
+  <script>(function () { var t = localStorage.getItem('kurs-theme') || 'dark'; document.documentElement.setAttribute('data-theme', t); })();</script>
+  <link rel="stylesheet" href="assets/kurs.css">
+  <link rel="stylesheet" id="hljs-theme"
+    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+
+<body>
+
+  <button class="hamburger" id="hamburger" aria-label="Navigation &ouml;ffnen">&#9776;</button>
+  <div class="sidebar-overlay" id="overlay"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <a href="index.html">
+        <span class="brand-icon">&#128274;</span>
+        <div>
+          <div class="brand-name">Web Security</div>
+          <div class="brand-sub">Web- und Mobile Computing</div>
+        </div>
+      </a>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Dark/Light Mode"
+        title="Theme wechseln">&#9728;</button>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group">
+        <div class="nav-group-label sec-label">Teil 1 &mdash; Konzepte</div>
+        <a class="nav-link" href="1.1-grundlagen.html"><span class="ln">1.1</span>Grundlagen der Web-Security</a>
+        <a class="nav-link" href="1.2-passwoerter.html"><span class="ln">1.2</span>Passwörter sicher speichern</a>
+        <a class="nav-link" href="1.3-sessions-cookies.html"><span class="ln">1.3</span>Sessions &amp; Cookies</a>
+        <a class="nav-link" href="1.4-jwt-tokens.html"><span class="ln">1.4</span>JWT &amp; Token-basierte Authentifizierung</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label secdev-label">Teil 2 &mdash; Umsetzung mit Next.js</div>
+        <a class="nav-link" href="2.1-login-sessions.html"><span class="ln">2.1</span>Login &amp; Sessions in Next.js</a>
+        <a class="nav-link" href="2.2-oauth-oidc-sso.html"><span class="ln">2.2</span>OAuth 2.0, OpenID Connect &amp; SSO</a>
+        <a class="nav-link" href="2.3-mfa-passkeys.html"><span class="ln">2.3</span>MFA, TOTP &amp; Passkeys</a>
+        <a class="nav-link" href="2.4-access-control.html"><span class="ln">2.4</span>Authorization &amp; Access Control</a>
+        <a class="nav-link" href="2.5-injection.html"><span class="ln">2.5</span>Injection &amp; unsichere Eingaben</a>
+        <a class="nav-link" href="2.6-xss-csrf.html"><span class="ln">2.6</span>XSS, CSRF &amp; Clickjacking</a>
+        <a class="nav-link" href="2.7-api-security.html"><span class="ln">2.7</span>API Security</a>
+        <a class="nav-link" href="2.8-secure-development.html"><span class="ln">2.8</span>Secure Development &amp; OWASP</a>
+      </div>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <header class="lesson-header">
+      <p class="lesson-eyebrow">Lektion 2.6 &mdash; Teil 2: Umsetzung mit Next.js</p>
+      <h1>XSS, CSRF &amp; Clickjacking</h1>
+      <div class="lesson-tags">
+        <span class="tag tag-secdev">Angriffe</span>
+        <span class="tag tag-time">ca. 60 min</span>
+        <span class="tag tag-level">Grundlagen</span>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <section class="section section-lernziele">
+        <h2>Lernziele</h2>
+        <ul class="lernziele-list">
+          <li>Die Same-Origin Policy erklären und begründen, warum XSS sie aushebelt</li>
+          <li>Stored, Reflected und DOM-based XSS unterscheiden und ihre Folgen beschreiben</li>
+          <li>Output Encoding kontextabhängig einsetzen und unsichere „Escape Hatches“ von Frameworks erkennen</li>
+          <li>Die Content Security Policy als zusätzliche Schutzschicht erklären</li>
+          <li>Den Ablauf eines CSRF-Angriffs beschreiben und Gegenmaßnahmen nennen</li>
+          <li>Clickjacking erklären und verhindern</li>
+                  <li>Sichere Ausgabe in React, eine CSP mit Nonce und CSRF-Schutz für Route Handler in Next.js umsetzen</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>1 — Die Same-Origin Policy</h2>
+        <p>
+          Im Browser sind gleichzeitig viele Websites offen: dein Webmail, dein Online-Banking, eine
+          Nachrichtenseite mit Werbung. Die <strong>Same-Origin Policy (SOP)</strong> sorgt dafür, dass
+          JavaScript einer Origin (Lektion 1.3: Schema + Host + Port) <strong>nicht</strong> auf Inhalte
+          einer anderen Origin zugreifen kann: Ein Skript auf <code>news.example</code> kann weder das DOM
+          deines Webmails lesen noch die Antworten von <code>bank.example</code>.
+        </p>
+        <p>
+          Die SOP ist die wichtigste Sicherheitsgrenze im Browser. Die beiden Angriffe dieser Lektion
+          umgehen sie auf unterschiedliche Weise:
+        </p>
+        <ul>
+          <li><strong>XSS</strong> bringt fremden Code dazu, <em>innerhalb</em> der angegriffenen Origin zu laufen – dort gilt die SOP nicht mehr.</li>
+          <li><strong>CSRF</strong> braucht gar keinen Lesezugriff: Es genügt, dass der Browser eine Anfrage an eine fremde Site <em>abschickt</em> und dabei automatisch Cookies anhängt.</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>2 — Cross-Site Scripting (XSS)</h2>
+        <p>
+          Bei <strong>Cross-Site Scripting</strong> gelingt es einem Angreifer, eigenen JavaScript-Code in
+          eine Webseite einzuschleusen, der dann im Browser anderer Benutzer ausgeführt wird. Für den
+          Browser stammt das Skript von der echten Website – es hat also dieselben Rechte wie der
+          Code der Anwendung selbst.
+        </p>
+        <p>
+          Beispiel: Ein Forum zeigt Kommentare ungeprüft als HTML an. Ein Angreifer schreibt einen Kommentar,
+          der statt Text ein <code>&lt;script&gt;</code>-Element enthält – oder ein harmlos wirkendes Bild mit
+          einem <code>onerror</code>-Attribut. Jeder, der den Kommentar ansieht, führt den Code aus.
+        </p>
+        <h3>Was kann eingeschleuster Code tun?</h3>
+        <ul>
+          <li>Cookies ohne <code>HttpOnly</code> und Tokens aus <code>localStorage</code> stehlen (Lektionen 1.3, 1.4)</li>
+          <li>Im Namen des Opfers Aktionen ausführen: Nachrichten senden, Passwort oder E-Mail ändern, bestellen</li>
+          <li>Tastatureingaben mitschneiden oder ein gefälschtes Login-Formular einblenden</li>
+          <li>Die Seite verändern oder auf eine Phishing-Seite umleiten</li>
+        </ul>
+        <h3>Drei Arten von XSS</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Art</th><th>Wo steckt der Schadcode?</th><th>Beispiel</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Stored XSS</strong></td><td>dauerhaft in der Datenbank; trifft jeden, der die Seite aufruft</td><td>Kommentar, Produktbewertung, Benutzername</td></tr>
+              <tr><td><strong>Reflected XSS</strong></td><td>in der Anfrage (meist URL); der Server gibt ihn direkt in der Antwort zurück</td><td>Suchseite zeigt „Ergebnisse für <em>Suchbegriff</em>“; Opfer klickt einen präparierten Link</td></tr>
+              <tr><td><strong>DOM-based XSS</strong></td><td>der Server ist nicht beteiligt; Frontend-JavaScript schreibt Daten (z.&nbsp;B. aus der URL) unsicher ins DOM</td><td>Single-Page-App setzt einen URL-Parameter per <code>innerHTML</code> in die Seite</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>3 — Output Encoding: der wichtigste Schutz gegen XSS</h2>
+        <p>
+          XSS ist eine Injection in den Interpreter „Browser“ (Lektion 2.5). Der Hauptschutz ist daher,
+          Daten beim <strong>Ausgeben</strong> so zu kodieren, dass der Browser sie als Text und nicht als
+          HTML oder Code interpretiert. Aus <code>&lt;</code> wird dabei z.&nbsp;B. die HTML-Entität
+          <code>&amp;lt;</code> – der Browser zeigt ein Kleiner-Zeichen an, startet aber kein Element.
+        </p>
+        <p>Die richtige Kodierung hängt vom <strong>Kontext</strong> ab, in dem die Daten landen:</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Kontext</th><th>Kodierung</th></tr></thead>
+            <tbody>
+              <tr><td>Text zwischen HTML-Tags</td><td>HTML-Entities (<code>&lt;</code> <code>&gt;</code> <code>&amp;</code> <code>"</code> <code>'</code>)</td></tr>
+              <tr><td>HTML-Attributwert</td><td>HTML-Attribut-Kodierung, Wert immer in Anführungszeichen</td></tr>
+              <tr><td>URL-Parameter</td><td>URL-Kodierung; zusätzlich nur <code>http:</code>/<code>https:</code>-Links zulassen (kein <code>javascript:</code>)</td></tr>
+              <tr><td>Innerhalb von JavaScript oder CSS</td><td>möglichst vermeiden; Daten z.&nbsp;B. über <code>data-</code>-Attribute übergeben</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>Frameworks helfen – mit Ausnahmen</h3>
+        <p>
+          Moderne Template-Engines und Frameworks (React, Angular, Vue, serverseitige Templates) kodieren
+          ausgegebene Werte <strong>automatisch</strong>. Gefährlich wird es, wenn man diesen Schutz bewusst
+          umgeht. Diese „Escape Hatches“ sollten im Code-Review immer auffallen:
+        </p>
+        <ul>
+          <li><code>innerHTML</code>, <code>outerHTML</code>, <code>document.write</code> im DOM – sicher ist <code>textContent</code> (JavaScript-Kurs, Lektion 2.1)</li>
+          <li><code>dangerouslySetInnerHTML</code> in React</li>
+          <li><code>[innerHTML]</code> mit <code>bypassSecurityTrustHtml</code> in Angular</li>
+          <li>Ausgaben ohne Escaping in Server-Templates (oft „raw“ oder „safe“ genannt)</li>
+        </ul>
+        <div class="callout callout-tip">
+  <div class="callout-icon">&#128161;</div>
+  <div class="callout-body">
+    <div class="callout-title">Wenn HTML erlaubt sein muss</div>
+    <p>Für Rich-Text (z.&nbsp;B. ein Editor mit Fett und Kursiv) wird das HTML mit einer bewährten
+          <strong>Sanitizer-Bibliothek</strong> (z.&nbsp;B. DOMPurify) bereinigt, die nur eine Allowlist harmloser
+          Elemente und Attribute übrig lässt. Eigene Filter mit regulären Ausdrücken sind fast immer umgehbar.</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>4 — Content Security Policy (CSP)</h2>
+        <p>
+          Die <strong>Content Security Policy</strong> ist ein HTTP-Response-Header, mit dem der Server dem
+          Browser mitteilt, aus welchen Quellen Skripte, Styles, Bilder, Frames usw. geladen werden dürfen.
+          Gelingt trotz Output Encoding eine Injection, verweigert der Browser die Ausführung des fremden
+          Skripts – eine zweite Schutzschicht (Defense in Depth).
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Direktive</th><th>Bedeutung</th></tr></thead>
+            <tbody>
+              <tr><td><code>default-src 'self'</code></td><td>standardmäßig nur Ressourcen der eigenen Origin</td></tr>
+              <tr><td><code>script-src 'nonce-…'</code></td><td>nur Skripte mit einem pro Antwort zufällig erzeugten Nonce-Attribut laufen; eingeschleuste Skripte kennen ihn nicht</td></tr>
+              <tr><td><code>object-src 'none'</code></td><td>keine Plugins</td></tr>
+              <tr><td><code>frame-ancestors 'none'</code></td><td>Seite darf nicht in Frames anderer Seiten eingebettet werden (Abschnitt 7)</td></tr>
+              <tr><td><code>report-to</code></td><td>Verstöße an eine URL melden</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <ul>
+          <li>Eine wirksame CSP verbietet <strong>Inline-Skripte</strong> und Event-Handler-Attribute wie <code>onclick</code> (außer mit Nonce) – genau diese nutzt XSS meist.</li>
+          <li>Einführung zuerst im Modus <strong>Report-Only</strong>: Der Browser meldet Verstöße, blockiert aber noch nichts.</li>
+          <li>Eine CSP ersetzt kein Output Encoding, sie begrenzt nur den Schaden.</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>5 — Cross-Site Request Forgery (CSRF)</h2>
+        <p>
+          Bei <strong>CSRF</strong> bringt eine fremde Website den Browser eines angemeldeten Benutzers dazu,
+          eine Aktion in einer anderen Anwendung auszuführen. Der Angriff nutzt aus, dass der Browser Cookies
+          bei Anfragen an eine Website <strong>automatisch</strong> mitschickt – egal, welche Seite die Anfrage
+          ausgelöst hat.
+        </p>
+        <figure class="figure">
+  <div class="figure-img"><img src="assets/img/csrf-ablauf.svg" alt="CSRF: Die böse Seite löst eine Überweisung aus, der Browser liefert das Session-Cookie" loading="lazy" style="max-width:680px"></div>
+  <figcaption>CSRF: Die böse Seite löst eine Überweisung aus, der Browser liefert das Session-Cookie</figcaption>
+</figure>
+        <p>Voraussetzungen für CSRF:</p>
+        <ul>
+          <li>Die Anwendung erkennt den Benutzer über <strong>automatisch mitgeschickte</strong> Zugangsdaten (Cookies).</li>
+          <li>Es gibt eine <strong>zustandsändernde</strong> Aktion (Überweisung, Passwort ändern, Beitrag löschen).</li>
+          <li>Alle Parameter der Anfrage sind für den Angreifer <strong>vorhersagbar</strong>.</li>
+        </ul>
+        <p>Der Angreifer kann die Antwort wegen der SOP nicht lesen – das muss er auch nicht, die Aktion ist bereits ausgeführt.</p>
+        <h3>Gegenmaßnahmen</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Maßnahme</th><th>Funktionsweise</th></tr></thead>
+            <tbody>
+              <tr><td><strong>SameSite-Cookies</strong></td><td><code>Lax</code> oder <code>Strict</code> verhindert, dass das Cookie bei Cross-Site-POSTs mitgeschickt wird (Lektion 1.3)</td></tr>
+              <tr><td><strong>CSRF-Token</strong></td><td>Ein zufälliger, an die Session gebundener Wert steht in jedem Formular und wird am Server geprüft; die fremde Seite kennt ihn nicht (<strong>Synchronizer Token Pattern</strong>)</td></tr>
+              <tr><td><strong>Origin-Header prüfen</strong></td><td>Der Browser gibt bei Anfragen die auslösende Origin an; der Server lehnt fremde Origins ab</td></tr>
+              <tr><td><strong>GET ändert nichts</strong></td><td>Zustandsändernde Aktionen nie per GET; sonst genügt schon ein eingebettetes Bild</td></tr>
+              <tr><td><strong>Re-Authentication</strong></td><td>Passwort oder MFA vor besonders kritischen Aktionen</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout callout-info">
+  <div class="callout-icon">&#8505;</div>
+  <div class="callout-body">
+    <div class="callout-title">Token im Header statt Cookie</div>
+    <p>APIs, die ein Access Token im <code>Authorization</code>-Header erwarten (Lektion 1.4), sind
+          nicht anfällig für klassisches CSRF: Der Browser hängt diesen Header nicht automatisch an. Sobald
+          die Anmeldung aber über Cookies läuft – auch beim BFF-Muster –, braucht es CSRF-Schutz.</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>6 — XSS und CSRF im Vergleich</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th></th><th>XSS</th><th>CSRF</th></tr></thead>
+            <tbody>
+              <tr><td>Angreifer-Code läuft …</td><td>in der angegriffenen Website</td><td>auf einer fremden Website</td></tr>
+              <tr><td>Kann Antworten lesen?</td><td>ja</td><td>nein</td></tr>
+              <tr><td>Ausgenutzt wird …</td><td>fehlendes Output Encoding</td><td>automatisch mitgeschickte Cookies</td></tr>
+              <tr><td>Hauptschutz</td><td>Output Encoding, CSP</td><td>SameSite-Cookies, CSRF-Token</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout callout-warning">
+  <div class="callout-icon">&#9888;</div>
+  <div class="callout-body">
+    <div class="callout-title">XSS schlägt CSRF-Schutz</div>
+    <p>Hat eine Anwendung eine XSS-Lücke, nützt der beste CSRF-Schutz nichts: Das eingeschleuste Skript
+          läuft in der Origin, kann das CSRF-Token aus der Seite lesen und gültige Anfragen schicken.</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>7 — Clickjacking</h2>
+        <p>
+          Beim <strong>Clickjacking</strong> bettet eine fremde Seite die angegriffene Anwendung in einen
+          unsichtbaren Frame (<code>iframe</code>) ein und legt ihn genau über einen harmlos wirkenden
+          Button („Gewinn abholen!“). Der Benutzer glaubt, auf die fremde Seite zu klicken, klickt aber in
+          Wirklichkeit in der echten, angemeldeten Anwendung – etwa auf „Konto löschen“ oder „Zugriff erlauben“.
+        </p>
+        <ul>
+          <li><strong>Schutz:</strong> Das Einbetten in fremde Seiten verbieten – mit der CSP-Direktive <code>frame-ancestors 'none'</code> (bzw. <code>'self'</code>) oder dem älteren Header <code>X-Frame-Options: DENY</code>.</li>
+          <li>Zusätzlich hilft <code>SameSite</code>: Im fremden Frame fehlen dann die Session-Cookies.</li>
+        </ul>
+      </section>
+
+            <section class="section">
+        <h2>8 — Umsetzung: sichere Ausgabe in React</h2>
+        <p>
+          React kodiert alles, was in <code>{…}</code> ausgegeben wird, automatisch – <code>&lt;script&gt;</code> in
+          einem Kommentar erscheint als Text. Lücken entstehen an drei Stellen: beim bewussten Einfügen von HTML,
+          bei URLs in <code>href</code>/<code>src</code> und außerhalb von React (<code>innerHTML</code>).
+        </p>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">Terminal</span>
+    <span class="code-lang">Bash</span>
+  </div>
+  <pre><code class="language-bash">npm install isomorphic-dompurify</code></pre>
+</div>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/components/FlightNote.tsx</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import DOMPurify from 'isomorphic-dompurify';
+
+import { safeHref } from '@/lib/safe-url';
+
+interface FlightNoteProps {
+  author: string;
+  text: string; // Klartext eines Benutzers
+  html: string; // Rich-Text aus dem Editor des Personals
+  link: string; // vom Benutzer angegebene URL
+}
+
+export default function FlightNote({ author, text, html, link }: FlightNoteProps) {
+  // Nur eine Allowlist harmloser Elemente bleibt übrig, Skripte und
+  // Event-Handler-Attribute werden entfernt
+  const cleanHtml = DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'p', 'ul', 'li', 'br'],
+    ALLOWED_ATTR: [],
+  });
+
+  return (
+    &lt;article&gt;
+      {/* JSX kodiert {author} und {text} automatisch – sicher */}
+      &lt;h3&gt;{author}&lt;/h3&gt;
+      &lt;p&gt;{text}&lt;/p&gt;
+
+      {/* Escape Hatch: nur mit bereinigtem HTML verwenden */}
+      &lt;div dangerouslySetInnerHTML={{ __html: cleanHtml }} /&gt;
+
+      {/* href wird NICHT automatisch geprüft – javascript:-Links verhindern */}
+      &lt;a href={safeHref(link)} rel="noopener noreferrer"&gt;Weitere Infos&lt;/a&gt;
+    &lt;/article&gt;
+  );
+}</code></pre>
+</div>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/lib/safe-url.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">/** Lässt nur http- und https-Links zu, alles andere wird zu "#". */
+export function safeHref(url: string): string {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:' ? parsed.href : '#';
+  } catch {
+    return '#'; // keine gültige absolute URL
+  }
+}</code></pre>
+</div>
+        <p><code>isomorphic-dompurify</code> ist DOMPurify für Browser <em>und</em> Server – die Komponente funktioniert damit auch als Server Component.</p>
+      </section>
+
+      <section class="section">
+        <h2>9 — Umsetzung: Content Security Policy mit Nonce</h2>
+        <p>
+          Der Nonce muss für jede Antwort neu erzeugt werden – deshalb setzen wir die CSP in der Middleware aus
+          Lektion 2.4. Next.js erkennt den Nonce im Request-Header <code>Content-Security-Policy</code> und hängt
+          ihn automatisch an seine eigenen <code>&lt;script&gt;</code>-Elemente.
+        </p>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/middleware.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import { type NextRequest, NextResponse } from 'next/server';
+
+// Deny by Default: Nur diese Pfade sind ohne Login erreichbar
+const PUBLIC_PATHS = ['/', '/login', '/register', '/departures', '/arrivals'];
+
+function contentSecurityPolicy(nonce: string): string {
+  const dev = process.env.NODE_ENV === 'development';
+  return [
+    "default-src 'self'",
+    // nur Skripte mit dem Nonce dieser Antwort (Dev-Server braucht eval)
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${dev ? " 'unsafe-eval'" : ''}`,
+    // Inline-Styles erlaubt: Next.js und viele Bibliotheken setzen style-Attribute;
+    // das Risiko ist deutlich geringer als bei Skripten
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob:",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'", // kein Einbetten in fremde Seiten (Clickjacking)
+  ].join('; ');
+}
+
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const isPublic = PUBLIC_PATHS.includes(pathname) || pathname.startsWith('/login/');
+
+  if (!isPublic &amp;&amp; !request.cookies.has('session')) {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Nicht angemeldet' }, { status: 401 });
+    }
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  // NEU: pro Anfrage ein zufälliger Nonce für die Content Security Policy
+  const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+  const csp = contentSecurityPolicy(nonce);
+
+  // Next.js liest den Nonce aus dem Request-Header und setzt ihn
+  // automatisch bei seinen eigenen Skripten
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-nonce', nonce);
+  requestHeaders.set('Content-Security-Policy', csp);
+
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  response.headers.set('Content-Security-Policy', csp);
+  return response;
+}
+
+export const config = {
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+};</code></pre>
+</div>
+        <ul>
+          <li><code>'strict-dynamic'</code>: Skripte, die ein vertrauenswürdiges (mit Nonce geladenes) Skript nachlädt, sind ebenfalls erlaubt – nötig für das Nachladen von Code-Teilen.</li>
+          <li>Der Dev-Server braucht <code>'unsafe-eval'</code> für Hot Reloading; in Produktion fehlt es.</li>
+          <li>Eigene Skripte erhalten den Nonce über den Header <code>x-nonce</code>.</li>
+          <li>Weil jede Antwort einen anderen Nonce hat, werden Seiten dynamisch gerendert statt statisch vorab erzeugt.</li>
+        </ul>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">Eigenes Skript mit Nonce (z. B. in einem Layout)</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import { headers } from 'next/headers';
+import Script from 'next/script';
+
+const nonce = (await headers()).get('x-nonce') ?? undefined;
+// …
+&lt;Script src="/statistik.js" nonce={nonce} /&gt;</code></pre>
+</div>
+        <div class="callout callout-tip">
+  <div class="callout-icon">&#128161;</div>
+  <div class="callout-body">
+    <div class="callout-title">Testen</div>
+    <p>Öffne nach dem Einbau die Konsole: Verstöße meldet der Browser als „Refused to execute inline
+          script because it violates the following Content Security Policy directive …“.</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>10 — Umsetzung: CSRF-Schutz</h2>
+        <p>Drei Schichten schützen das FlugBoard:</p>
+        <ol>
+          <li><strong>SameSite=Lax</strong> am Session-Cookie (Lektion 2.1) – bei Cross-Site-POSTs fehlt das Cookie.</li>
+          <li><strong>Server Actions</strong> sind nur per POST aufrufbar, und Next.js vergleicht dabei automatisch den <code>Origin</code>-Header mit der eigenen Adresse. Fremde Origins werden abgelehnt (erlaubte Ausnahmen über <code>serverActions.allowedOrigins</code> in <code>next.config.ts</code>).</li>
+          <li><strong>Route Handler</strong> prüfen das nicht automatisch. Für zustandsändernde Methoden mit Cookie-Anmeldung prüfen wir den <code>Origin</code>-Header selbst:</li>
+        </ol>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/lib/same-origin.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">/**
+ * CSRF-Schutz für Route Handler mit Cookie-Anmeldung: Der Browser schickt
+ * bei POST, PUT, PATCH und DELETE den Origin-Header der auslösenden Seite mit.
+ * Server Actions prüfen das in Next.js bereits automatisch.
+ */
+export function isSameOrigin(request: Request): boolean {
+  const origin = request.headers.get('origin');
+  const expected = new URL(process.env.APP_URL ?? 'http://localhost:3000').origin;
+  return origin === expected;
+}</code></pre>
+</div>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/app/api/bookings/[id]/route.ts (DELETE)</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">export async function DELETE(request: Request, { params }: RouteParams) {
+  // NEU: zustandsändernde Anfrage von einer fremden Seite? → ablehnen
+  if (!isSameOrigin(request)) {
+    return NextResponse.json({ error: 'Ungültige Herkunft' }, { status: 403 });
+  }
+  // … weiter wie in Lektion 2.4</code></pre>
+</div>
+        <p>Fehlt der <code>Origin</code>-Header ganz (z.&nbsp;B. bei curl), wird ebenfalls abgelehnt. Für Clickjacking sorgt bereits <code>frame-ancestors 'none'</code> in der CSP.</p>
+      </section>
+
+      <section class="section section-fehler">
+        <h2>Häufige Fehler</h2>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: innerHTML für Benutzerdaten</div>
+  <p>Eine Single-Page-App zeigt den Benutzernamen mit <code>innerHTML</code> an. Ein Benutzer nennt sich so, dass sein Name ein HTML-Element mit Event-Handler enthält – Stored XSS bei allen, die seinen Namen sehen.</p>
+          <p class="fehler-fix">Für Text immer <code>textContent</code> bzw. die automatische Kodierung des Frameworks verwenden; Escape Hatches nur mit Sanitizer.</p>
+</div>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: Validierung statt Encoding</div>
+  <p>Ein Filter entfernt <code>&lt;script&gt;</code> aus allen Eingaben. Angreifer nutzen stattdessen Event-Handler wie <code>onerror</code> oder Links mit <code>javascript:</code>.</p>
+          <p class="fehler-fix">Beim Ausgeben kontextabhängig kodieren; zusätzlich eine CSP ohne Inline-Skripte.</p>
+</div>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: Zustandsänderung per GET</div>
+  <p>Ein Beitrag wird über einen Link <code>/posts/17/delete</code> gelöscht. Ein Bild mit dieser Adresse auf einer fremden Seite reicht, um Beiträge angemeldeter Benutzer zu löschen.</p>
+          <p class="fehler-fix">Zustandsändernde Aktionen nur mit POST/PUT/DELETE, kombiniert mit SameSite-Cookies und CSRF-Token.</p>
+</div>
+      </section>
+
+      <section class="section section-aufgaben">
+        <h2>Aufgaben</h2>
+        <div class="aufgaben-list">
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 1</span>
+    <span class="aufgabe-title">XSS-Art bestimmen</span>
+  </div>
+  <p>Bestimme jeweils die XSS-Art und die Gegenmaßnahme: (a) Ein Produktname im Shop-Backend enthält Schadcode, der bei allen Kunden ausgeführt wird. (b) Ein Link <code>/search?q=…</code> mit Schadcode wird per E-Mail verschickt. (c) Eine SPA liest <code>location.hash</code> und schreibt den Wert ins DOM.</p>
+</div>
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 2</span>
+    <span class="aufgabe-title">CSP lesen</span>
+  </div>
+  <p>Öffne die DevTools (Tab <strong>Network</strong>) bei drei großen Websites und suche den Response-Header <code>Content-Security-Policy</code>. Welche Direktiven findest du? Erlaubt eine der Seiten Inline-Skripte?</p>
+</div>
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 3</span>
+    <span class="aufgabe-title">Kommentare zu Flügen</span>
+  </div>
+  <p>Ergänze eine Kommentarfunktion für Flüge (Tabelle, Server Action, Anzeige). Teste mit Eingaben wie <code>&lt;img src=x onerror=alert(1)&gt;</code> und einem Link <code>javascript:alert(1)</code>. Baue dann absichtlich eine Lücke mit <code>dangerouslySetInnerHTML</code> ein und beobachte, wie die CSP aus Abschnitt 9 die Ausführung trotzdem blockiert (Konsole). Entferne die Lücke wieder.</p>
+</div>
+          <div class="aufgabe aufgabe-bonus">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Bonus</span>
+    <span class="aufgabe-title">Übungsumgebung</span>
+  </div>
+  <p>Spiele das Lernspiel <strong>Google XSS Game</strong> oder ein XSS-Lab der <strong>PortSwigger Web Security Academy</strong>. Erkläre für ein gelöstes Level, welche Ausgabe nicht kodiert war und wie die korrekte Lösung im Code aussehen müsste (in Worten).</p>
+</div>
+        </div>
+      </section>
+
+      <section class="section section-quiz">
+        <h2>Wissenskontrolle</h2>
+        <div class="quiz" id="quiz-1">
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 1</span> Warum ist XSS so gefährlich, obwohl der Browser die Same-Origin Policy durchsetzt?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Weil XSS die Verschlüsselung von HTTPS bricht</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-1"> <span>Weil der eingeschleuste Code in der angegriffenen Origin läuft und damit dieselben Rechte wie die Anwendung hat</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Weil die SOP nur für Bilder gilt</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Weil XSS nur in alten Browsern funktioniert</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Die SOP trennt Origins voneinander. Ein über XSS eingeschleustes Skript ist aber Teil der Seite selbst – für den Browser ist es Code der echten Anwendung und darf alles, was diese darf.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 2</span> Ein Angreifer schreibt Schadcode in eine Produktbewertung, der bei jedem Besucher der Produktseite ausgeführt wird. Welche Art von XSS ist das?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-2"> <span>Stored XSS</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Reflected XSS</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>DOM-based XSS</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>CSRF</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Der Schadcode ist dauerhaft in der Datenbank gespeichert und trifft alle, die die Seite aufrufen. Bei Reflected XSS steckt er in der Anfrage (meist ein präparierter Link), bei DOM-based XSS entsteht die Lücke nur im Frontend-Code.</div>
+  </div>
+  <div class="quiz-frage" data-multi="1">
+    <p class="quiz-q"><span class="quiz-num">Frage 3</span> Welche Maßnahmen schützen gegen XSS?</p>
+    <p class="quiz-hint">Mehrere Antworten sind richtig.</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-3"> <span>Kontextabhängiges Output Encoding</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-3"> <span>Eine Content Security Policy ohne Inline-Skripte</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-3"> <span><code>textContent</code> statt <code>innerHTML</code> für Benutzerdaten</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-3"> <span>Ein CSRF-Token in jedem Formular</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Output Encoding ist der Hauptschutz, <code>textContent</code> ist Encoding auf DOM-Ebene, die CSP begrenzt den Schaden. CSRF-Token schützen gegen CSRF, nicht gegen XSS – im Gegenteil, XSS kann CSRF-Token auslesen.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 4</span> Welche Voraussetzung muss für einen klassischen CSRF-Angriff erfüllt sein?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Der Angreifer muss das Passwort des Opfers kennen</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Die Anwendung muss eine XSS-Lücke haben</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-4"> <span>Die Anwendung erkennt den Benutzer über automatisch mitgeschickte Cookies</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Der Angreifer muss die Antwort der Anwendung lesen können</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> CSRF nutzt aus, dass der Browser Cookies automatisch anhängt. Weder Passwort noch XSS sind nötig, und die Antwort muss der Angreifer nicht lesen – die Aktion wird trotzdem ausgeführt.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 5</span> Wie verhindert man, dass die eigene Anwendung für Clickjacking in einen unsichtbaren Frame eingebettet wird?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span>Mit dem Cookie-Attribut HttpOnly</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-5"> <span>Mit der CSP-Direktive <code>frame-ancestors</code> bzw. dem Header <code>X-Frame-Options</code></span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span>Mit Prepared Statements</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span>Mit einem Refresh Token</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> <code>frame-ancestors 'none'</code> oder <code>'self'</code> (bzw. <code>X-Frame-Options: DENY</code>) verbietet das Einbetten in fremde Seiten. Die anderen Maßnahmen betreffen Cookies, SQL Injection und Tokens.</div>
+  </div>
+  <div class="quiz-frage" data-multi="1">
+    <p class="quiz-q"><span class="quiz-num">Frage 6</span> Welche Stellen in einer React-Komponente muss man bei XSS besonders prüfen?</p>
+    <p class="quiz-hint">Mehrere Antworten sind richtig.</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-6"> <span><code>dangerouslySetInnerHTML</code></span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-6"> <span><code>href</code> mit einer vom Benutzer angegebenen URL</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-6"> <span><code>&lt;p&gt;{comment.text}&lt;/p&gt;</code></span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-6"> <span>Direkte DOM-Zugriffe mit <code>innerHTML</code></span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Text in <code>{…}</code> kodiert React automatisch. <code>dangerouslySetInnerHTML</code> und <code>innerHTML</code> umgehen diesen Schutz, und eine URL wie <code>javascript:…</code> in <code>href</code> wird nicht geprüft – daher <code>safeHref</code>.</div>
+  </div>
+  <div class="quiz-summary"><span class="quiz-score"></span><button type="button" class="quiz-reset">Zur&uuml;cksetzen</button></div>
+</div>
+      </section>
+
+    </div>
+
+    <nav class="lesson-nav">
+      <a class="nav-btn" href="2.5-injection.html">&larr; Lektion 2.5: Injection &amp; unsichere Eingaben</a>
+      <span class="nav-center-info">Lektion 2.6</span>
+      <a class="nav-btn primary" href="2.7-api-security.html">Lektion 2.7: API Security &rarr;</a>
+    </nav>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>
+    const ham = document.getElementById('hamburger');
+    const sb = document.getElementById('sidebar');
+    const ov = document.getElementById('overlay');
+    ham.addEventListener('click', () => { sb.classList.toggle('open'); ov.classList.toggle('visible'); });
+    ov.addEventListener('click', () => { sb.classList.remove('open'); ov.classList.remove('visible'); });
+    const cur = window.location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.nav-link').forEach(l => {
+      if (l.getAttribute('href') === cur) l.classList.add('active');
+    });
+    const themeBtn = document.getElementById('theme-toggle');
+    const applyTheme = (t) => {
+      document.documentElement.setAttribute('data-theme', t);
+      if (themeBtn) themeBtn.innerHTML = t === 'dark' ? '&#9728;' : '&#9790;';
+    };
+    applyTheme(localStorage.getItem('kurs-theme') || 'dark');
+    setTimeout(() => document.documentElement.classList.add('theme-transitions'), 50);
+    if (themeBtn) themeBtn.addEventListener('click', () => {
+      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('kurs-theme', next);
+      applyTheme(next);
+    });
+    hljs.highlightAll();
+  </script>
+  <script>
+    document.querySelectorAll('.quiz').forEach((quiz) => {
+      const fragen = [...quiz.querySelectorAll('.quiz-frage')];
+      const score = quiz.querySelector('.quiz-score');
+      const update = () => {
+        const done = fragen.filter((f) => f.dataset.state).length;
+        const ok = fragen.filter((f) => f.dataset.state === 'ok').length;
+        score.textContent = done === 0
+          ? fragen.length + ' Fragen – wähle eine Antwort und prüfe sie.'
+          : ok + ' von ' + fragen.length + ' richtig'
+            + (done < fragen.length ? ' (' + done + ' von ' + fragen.length + ' bearbeitet)' : '');
+      };
+      fragen.forEach((f) => {
+        const inputs = [...f.querySelectorAll('input')];
+        const check = f.querySelector('.quiz-check');
+        const reveal = f.querySelector('.quiz-reveal');
+        const fb = f.querySelector('.quiz-feedback');
+        const exp = f.querySelector('.quiz-erklaerung');
+        inputs.forEach((i) => i.addEventListener('change', () => {
+          check.disabled = !inputs.some((x) => x.checked);
+        }));
+        const finish = (graded) => {
+          let allOk = true;
+          f.querySelectorAll('.quiz-opt').forEach((li) => {
+            const input = li.querySelector('input');
+            const corr = li.dataset.correct === '1';
+            if (corr !== input.checked) allOk = false;
+            if (corr) li.classList.add('opt-correct');
+            else if (input.checked) li.classList.add('opt-wrong');
+            input.disabled = true;
+          });
+          f.dataset.state = !graded ? 'shown' : (allOk ? 'ok' : 'wrong');
+          fb.className = 'quiz-feedback fb-' + f.dataset.state;
+          fb.textContent = !graded ? 'Lösung angezeigt.'
+            : (allOk ? '✔ Richtig!' : '✘ Leider nicht ganz – die richtige Lösung ist markiert.');
+          fb.hidden = false;
+          exp.hidden = false;
+          check.disabled = true;
+          reveal.disabled = true;
+          update();
+        };
+        check.addEventListener('click', () => finish(true));
+        reveal.addEventListener('click', () => finish(false));
+      });
+      quiz.querySelector('.quiz-reset').addEventListener('click', () => {
+        fragen.forEach((f) => {
+          delete f.dataset.state;
+          f.querySelectorAll('.quiz-opt').forEach((li) => li.classList.remove('opt-correct', 'opt-wrong'));
+          f.querySelectorAll('input').forEach((i) => { i.checked = false; i.disabled = false; });
+          f.querySelector('.quiz-check').disabled = true;
+          f.querySelector('.quiz-reveal').disabled = false;
+          f.querySelector('.quiz-feedback').hidden = true;
+          f.querySelector('.quiz-erklaerung').hidden = true;
+        });
+        update();
+      });
+      update();
+    });
+  </script>
+</body>
+
+</html>

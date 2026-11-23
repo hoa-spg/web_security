@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<!-- GENERIERT von kurse/_build (web_security) – nicht direkt bearbeiten!
+     Quelle: kurse/_build/web_security/lessons/, bauen: python3 _build/build.py web_security -->
+<html lang="de">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Security &amp; Identity Kurs</title>
+  <script>(function () { var t = localStorage.getItem('kurs-theme') || 'dark'; document.documentElement.setAttribute('data-theme', t); })();</script>
+  <link rel="stylesheet" href="assets/kurs.css">
+  <link rel="stylesheet" id="hljs-theme"
+    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+
+<body>
+
+  <button class="hamburger" id="hamburger" aria-label="Navigation &ouml;ffnen">&#9776;</button>
+  <div class="sidebar-overlay" id="overlay"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <a href="index.html">
+        <span class="brand-icon">&#128274;</span>
+        <div>
+          <div class="brand-name">Web Security</div>
+          <div class="brand-sub">Web- und Mobile Computing</div>
+        </div>
+      </a>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Dark/Light Mode"
+        title="Theme wechseln">&#9728;</button>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group">
+        <div class="nav-group-label sec-label">Teil 1 &mdash; Konzepte</div>
+        <a class="nav-link" href="1.1-grundlagen.html"><span class="ln">1.1</span>Grundlagen der Web-Security</a>
+        <a class="nav-link" href="1.2-passwoerter.html"><span class="ln">1.2</span>Passwörter sicher speichern</a>
+        <a class="nav-link" href="1.3-sessions-cookies.html"><span class="ln">1.3</span>Sessions &amp; Cookies</a>
+        <a class="nav-link" href="1.4-jwt-tokens.html"><span class="ln">1.4</span>JWT &amp; Token-basierte Authentifizierung</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label secdev-label">Teil 2 &mdash; Umsetzung mit Next.js</div>
+        <a class="nav-link" href="2.1-login-sessions.html"><span class="ln">2.1</span>Login &amp; Sessions in Next.js</a>
+        <a class="nav-link" href="2.2-oauth-oidc-sso.html"><span class="ln">2.2</span>OAuth 2.0, OpenID Connect &amp; SSO</a>
+        <a class="nav-link" href="2.3-mfa-passkeys.html"><span class="ln">2.3</span>MFA, TOTP &amp; Passkeys</a>
+        <a class="nav-link" href="2.4-access-control.html"><span class="ln">2.4</span>Authorization &amp; Access Control</a>
+        <a class="nav-link" href="2.5-injection.html"><span class="ln">2.5</span>Injection &amp; unsichere Eingaben</a>
+        <a class="nav-link" href="2.6-xss-csrf.html"><span class="ln">2.6</span>XSS, CSRF &amp; Clickjacking</a>
+        <a class="nav-link" href="2.7-api-security.html"><span class="ln">2.7</span>API Security</a>
+        <a class="nav-link" href="2.8-secure-development.html"><span class="ln">2.8</span>Secure Development &amp; OWASP</a>
+      </div>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <div class="index-hero">
+      <p class="lesson-eyebrow">Kursübersicht</p>
+      <h1>Web Security <span>&amp; Identity</span></h1>
+      <p class="subtitle">
+        12 Lektionen zu Web Application Security &amp; Identity Management &mdash; Teil&nbsp;1 erklärt
+        Passwörter, Sessions und Tokens, Teil&nbsp;2 setzt nach dem React-Kurs alles mit Next.js um: Login,
+        OAuth&nbsp;2.0 und Passkeys, Access Control, Injection, XSS, CSRF, API Security und Secure Development.
+        Mit interaktiver Wissenskontrolle am Ende jeder Lektion.
+      </p>
+      <div class="lesson-tags" style="margin-top:1.25rem">
+        <span class="tag tag-sec">Authentication</span>
+        <span class="tag tag-sec">Authorization</span>
+        <span class="tag tag-secdev">Next.js &amp; Drizzle</span>
+        <span class="tag tag-sec">OWASP Top 10</span>
+        <span class="tag tag-time">ca. 12 Stunden</span>
+        <span class="tag tag-time">Web- und Mobile Computing &middot; 2. Jahr</span>
+      </div>
+    </div>
+
+    <div class="content-area">
+
+      <div class="section">
+        <h2 class="sec-header" style="border-bottom:2px solid rgba(57,197,187,0.4);padding-bottom:.5rem">
+          Teil 1 &mdash; Konzepte
+        </h2>
+        <p>Ohne Programmierung, unabhängig von Sprache und Framework. Kann vor oder parallel zum React-Kurs durchgenommen werden.</p>
+        <div class="course-grid">
+          <a class="lesson-card sec-card" href="1.1-grundlagen.html">
+            <span class="lesson-card-num">1.1</span>
+            <div class="lesson-card-content"><h4>Grundlagen der Web-Security</h4><p>AuthN vs. AuthZ, Schutzziele, Never trust the client, OWASP Top 10</p></div>
+          </a>
+          <a class="lesson-card sec-card" href="1.2-passwoerter.html">
+            <span class="lesson-card-num">1.2</span>
+            <div class="lesson-card-content"><h4>Passwörter sicher speichern</h4><p>Hashing, Salt &amp; Pepper, Argon2/bcrypt/PBKDF2, Password Policies, Credential Stuffing</p></div>
+          </a>
+          <a class="lesson-card sec-card" href="1.3-sessions-cookies.html">
+            <span class="lesson-card-num">1.3</span>
+            <div class="lesson-card-content"><h4>Sessions &amp; Cookies</h4><p>Session-ID, Secure, HttpOnly, SameSite, Origin vs. Site, Hijacking, Fixation, Timeouts</p></div>
+          </a>
+          <a class="lesson-card sec-card" href="1.4-jwt-tokens.html">
+            <span class="lesson-card-num">1.4</span>
+            <div class="lesson-card-content"><h4>JWT &amp; Token-basierte Authentifizierung</h4><p>Aufbau, Claims, Signatur, Validierung, Access/Refresh Tokens, Revocation, Sessions vs. JWT</p></div>
+          </a>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 class="secdev-header" style="border-bottom:2px solid rgba(167,139,250,0.4);padding-bottom:.5rem">
+          Teil 2 &mdash; Umsetzung mit Next.js
+        </h2>
+        <p>Nach dem <a href="../react/index.html">React-Kurs</a>: Das FlugBoard wird Lektion für Lektion abgesichert &ndash; mit Next.js (App Router, Server Actions, Route Handlers), Drizzle, SQLite und TypeScript.</p>
+        <div class="course-grid">
+          <a class="lesson-card secdev-card" href="2.1-login-sessions.html">
+            <span class="lesson-card-num">2.1</span>
+            <div class="lesson-card-content"><h4>Login &amp; Sessions in Next.js</h4><p>Benutzer- und Session-Tabelle, Argon2id, sichere Cookies, Zod, Server Actions für Registrierung, Login, Logout</p></div>
+          </a>
+          <a class="lesson-card secdev-card" href="2.2-oauth-oidc-sso.html">
+            <span class="lesson-card-num">2.2</span>
+            <div class="lesson-card-content"><h4>OAuth 2.0, OpenID Connect &amp; SSO</h4><p>Rollen, Scopes, Authorization Code + PKCE, ID Token, SSO &ndash; „Anmelden mit …“ mit openid-client</p></div>
+          </a>
+          <a class="lesson-card secdev-card" href="2.3-mfa-passkeys.html">
+            <span class="lesson-card-num">2.3</span>
+            <div class="lesson-card-content"><h4>MFA, TOTP &amp; Passkeys</h4><p>Faktoren, Phishing-Resistenz, WebAuthn &ndash; TOTP mit otplib, verschlüsselte Secrets, Passkeys mit SimpleWebAuthn</p></div>
+          </a>
+          <a class="lesson-card secdev-card" href="2.4-access-control.html">
+            <span class="lesson-card-num">2.4</span>
+            <div class="lesson-card-content"><h4>Authorization &amp; Access Control</h4><p>RBAC, ABAC, Least Privilege, IDOR, Privilege Escalation &ndash; Berechtigungen, Middleware, Mass Assignment</p></div>
+          </a>
+          <a class="lesson-card secdev-card" href="2.5-injection.html">
+            <span class="lesson-card-num">2.5</span>
+            <div class="lesson-card-content"><h4>Injection &amp; unsichere Eingaben</h4><p>Input Validation, SQL/Command Injection, Path Traversal, Uploads &ndash; Drizzle, execFile, Magic Bytes</p></div>
+          </a>
+          <a class="lesson-card secdev-card" href="2.6-xss-csrf.html">
+            <span class="lesson-card-num">2.6</span>
+            <div class="lesson-card-content"><h4>XSS, CSRF &amp; Clickjacking</h4><p>Same-Origin Policy, Output Encoding, DOMPurify, CSP mit Nonce, Origin-Prüfung</p></div>
+          </a>
+          <a class="lesson-card secdev-card" href="2.7-api-security.html">
+            <span class="lesson-card-num">2.7</span>
+            <div class="lesson-card-content"><h4>API Security</h4><p>API Keys, JWT mit jose, Request Validation, Rate Limiting, CORS, Error Handling, SSRF, Open Redirect</p></div>
+          </a>
+          <a class="lesson-card secdev-card" href="2.8-secure-development.html">
+            <span class="lesson-card-num">2.8</span>
+            <div class="lesson-card-content"><h4>Secure Development &amp; OWASP</h4><p>Secrets, Env-Validierung, Dependencies, Security Headers, Logging, CI, Playwright-Security-Tests, ASVS</p></div>
+          </a>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Aufbau der Lektionen</h2>
+        <p>
+          Jede Lektion beginnt mit Lernzielen, erklärt die Konzepte mit Tabellen, Diagrammen und Beispielen
+          und endet mit häufigen Fehlern, Aufgaben und einer <strong>Wissenskontrolle</strong>:
+          Multiple-Choice-Fragen, die du direkt auf der Seite beantwortest. Nach dem Prüfen siehst du die
+          richtige Lösung mit Erklärung.
+        </p>
+        <p>
+          In Teil 2 folgt auf die Theorie jeweils die <strong>Umsetzung im FlugBoard</strong>. Alle Codebeispiele
+          sind vollständige Dateien, die zusammen ein lauffähiges Projekt ergeben; sie wurden mit dem
+          TypeScript-Compiler geprüft und im Browser getestet.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Priorität</th><th>Lektionen</th><th>Niveau-Tag</th></tr></thead>
+            <tbody>
+              <tr><td>unbedingt beherrschen</td><td>1.1–1.4, 2.1, 2.2, 2.4–2.6</td><td>Grundlagen</td></tr>
+              <tr><td>fortgeschritten</td><td>2.3, 2.7</td><td>Fortgeschritten</td></tr>
+              <tr><td>Vertiefung</td><td>2.8</td><td>Vertiefung</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Voraussetzungen &amp; Werkzeuge</h2>
+        <div class="callout callout-info">
+  <div class="callout-icon">&#8505;</div>
+  <div class="callout-body">
+    <div class="callout-title">Empfohlenes Vorwissen</div>
+    <strong>Teil 1:</strong> der <a href="../javascript/index.html">JavaScript-Kurs</a> (insbesondere
+          Cookies und Browser APIs) sowie Grundkenntnisse über HTTP.
+          <strong>Teil 2:</strong> der <a href="../react/index.html">React-Kurs</a> bis einschließlich Teil 3
+          (Next.js, Server Actions, Route Handlers, Drizzle, Deployment).
+  </div>
+</div>
+        <div class="callout callout-tip">
+  <div class="callout-icon">&#128161;</div>
+  <div class="callout-body">
+    <div class="callout-title">Empfohlene Tools</div>
+    <p>Ein aktueller Browser mit DevTools (<kbd>F12</kbd>, Tabs <strong>Network</strong> und
+          <strong>Application</strong>), Node.js (LTS) und VS Code. Für freiwillige Übungen: OWASP Juice Shop
+          oder die kostenlose PortSwigger Web Security Academy &ndash; Angriffe nur in solchen Übungsumgebungen!</p>
+  </div>
+</div>
+      </div>
+
+      <div class="section">
+        <h2>Kurs lokal ansehen</h2>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">Lokaler Test</span>
+    <span class="code-lang">Bash</span>
+  </div>
+  <pre><code class="language-bash">python3 -m http.server 8080
+# → http://localhost:8080/index.html</code></pre>
+</div>
+      </div>
+
+    </div><!-- /content-area -->
+
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>
+    const ham = document.getElementById('hamburger');
+    const sb = document.getElementById('sidebar');
+    const ov = document.getElementById('overlay');
+    ham.addEventListener('click', () => { sb.classList.toggle('open'); ov.classList.toggle('visible'); });
+    ov.addEventListener('click', () => { sb.classList.remove('open'); ov.classList.remove('visible'); });
+    const cur = window.location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.nav-link').forEach(l => {
+      if (l.getAttribute('href') === cur) l.classList.add('active');
+    });
+    const themeBtn = document.getElementById('theme-toggle');
+    const applyTheme = (t) => {
+      document.documentElement.setAttribute('data-theme', t);
+      if (themeBtn) themeBtn.innerHTML = t === 'dark' ? '&#9728;' : '&#9790;';
+    };
+    applyTheme(localStorage.getItem('kurs-theme') || 'dark');
+    setTimeout(() => document.documentElement.classList.add('theme-transitions'), 50);
+    if (themeBtn) themeBtn.addEventListener('click', () => {
+      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('kurs-theme', next);
+      applyTheme(next);
+    });
+    hljs.highlightAll();
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<!-- GENERIERT von kurse/_build (web_security) – nicht direkt bearbeiten!
+     Quelle: kurse/_build/web_security/lessons/, bauen: python3 _build/build.py web_security -->
+<html lang="de">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2.5 &ndash; Injection &amp; unsichere Eingaben | Web Security &amp; Identity Kurs</title>
+  <script>(function () { var t = localStorage.getItem('kurs-theme') || 'dark'; document.documentElement.setAttribute('data-theme', t); })();</script>
+  <link rel="stylesheet" href="assets/kurs.css">
+  <link rel="stylesheet" id="hljs-theme"
+    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+
+<body>
+
+  <button class="hamburger" id="hamburger" aria-label="Navigation &ouml;ffnen">&#9776;</button>
+  <div class="sidebar-overlay" id="overlay"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <a href="index.html">
+        <span class="brand-icon">&#128274;</span>
+        <div>
+          <div class="brand-name">Web Security</div>
+          <div class="brand-sub">Web- und Mobile Computing</div>
+        </div>
+      </a>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Dark/Light Mode"
+        title="Theme wechseln">&#9728;</button>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group">
+        <div class="nav-group-label sec-label">Teil 1 &mdash; Konzepte</div>
+        <a class="nav-link" href="1.1-grundlagen.html"><span class="ln">1.1</span>Grundlagen der Web-Security</a>
+        <a class="nav-link" href="1.2-passwoerter.html"><span class="ln">1.2</span>Passwörter sicher speichern</a>
+        <a class="nav-link" href="1.3-sessions-cookies.html"><span class="ln">1.3</span>Sessions &amp; Cookies</a>
+        <a class="nav-link" href="1.4-jwt-tokens.html"><span class="ln">1.4</span>JWT &amp; Token-basierte Authentifizierung</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label secdev-label">Teil 2 &mdash; Umsetzung mit Next.js</div>
+        <a class="nav-link" href="2.1-login-sessions.html"><span class="ln">2.1</span>Login &amp; Sessions in Next.js</a>
+        <a class="nav-link" href="2.2-oauth-oidc-sso.html"><span class="ln">2.2</span>OAuth 2.0, OpenID Connect &amp; SSO</a>
+        <a class="nav-link" href="2.3-mfa-passkeys.html"><span class="ln">2.3</span>MFA, TOTP &amp; Passkeys</a>
+        <a class="nav-link" href="2.4-access-control.html"><span class="ln">2.4</span>Authorization &amp; Access Control</a>
+        <a class="nav-link" href="2.5-injection.html"><span class="ln">2.5</span>Injection &amp; unsichere Eingaben</a>
+        <a class="nav-link" href="2.6-xss-csrf.html"><span class="ln">2.6</span>XSS, CSRF &amp; Clickjacking</a>
+        <a class="nav-link" href="2.7-api-security.html"><span class="ln">2.7</span>API Security</a>
+        <a class="nav-link" href="2.8-secure-development.html"><span class="ln">2.8</span>Secure Development &amp; OWASP</a>
+      </div>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <header class="lesson-header">
+      <p class="lesson-eyebrow">Lektion 2.5 &mdash; Teil 2: Umsetzung mit Next.js</p>
+      <h1>Injection &amp; unsichere Eingaben</h1>
+      <div class="lesson-tags">
+        <span class="tag tag-secdev">Angriffe</span>
+        <span class="tag tag-time">ca. 60 min</span>
+        <span class="tag tag-level">Grundlagen</span>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <section class="section section-lernziele">
+        <h2>Lernziele</h2>
+        <ul class="lernziele-list">
+          <li>Das gemeinsame Prinzip aller Injection-Angriffe erklären</li>
+          <li>Input Validation mit Allowlists korrekt einsetzen und ihre Grenzen kennen</li>
+          <li>SQL Injection beschreiben und mit Prepared Statements verhindern</li>
+          <li>Command Injection und Path Traversal erkennen und vermeiden</li>
+          <li>Risiken von Datei-Uploads nennen und einen sicheren Upload entwerfen</li>
+          <li>Erklären, warum das Deserialisieren nicht vertrauenswürdiger Daten gefährlich ist</li>
+                  <li>Datenbankabfragen, Programmaufrufe, Dateipfade und Uploads in Next.js sicher umsetzen</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>1 — Das Prinzip von Injection</h2>
+        <p>
+          Viele Programme geben Daten an einen <strong>Interpreter</strong> weiter: an die Datenbank (SQL), an
+          die Shell des Betriebssystems, an das Dateisystem, an den Browser (HTML/JavaScript). Eine
+          <strong>Injection</strong> entsteht, wenn Benutzereingaben so in einen Befehl eingebaut werden,
+          dass der Interpreter einen Teil der <em>Daten</em> als <em>Befehl</em> versteht.
+        </p>
+        <p>
+          Bildlich: Ein Formular für eine Paketlieferung hat das Feld „Name“. Jemand schreibt hinein:
+          „Max Muster. Außerdem: Bitte alle Pakete im Lager an mich schicken.“ Ein Mitarbeiter, der den
+          Zettel wörtlich ausführt, ist der Interpreter – Daten und Anweisung lassen sich nicht mehr trennen.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Interpreter</th><th>Angriff</th><th>Lektion</th></tr></thead>
+            <tbody>
+              <tr><td>Datenbank</td><td>SQL Injection, NoSQL Injection</td><td>diese</td></tr>
+              <tr><td>Betriebssystem-Shell</td><td>Command Injection</td><td>diese</td></tr>
+              <tr><td>Dateisystem</td><td>Path Traversal</td><td>diese</td></tr>
+              <tr><td>Browser (HTML/JavaScript)</td><td>Cross-Site Scripting</td><td>2.6</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout callout-tip">
+  <div class="callout-icon">&#128161;</div>
+  <div class="callout-body">
+    <div class="callout-title">Die Grundregel</div>
+    <p>Daten und Befehle immer <strong>getrennt</strong> an den Interpreter übergeben. Wo das nicht geht,
+          die Daten für genau diesen Interpreter kodieren.</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>2 — Input Validation</h2>
+        <p>Die erste Verteidigungslinie ist, Eingaben am Server zu prüfen, bevor sie verarbeitet werden:</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Prüfung</th><th>Beispiel</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Typ</strong></td><td>Menge ist eine ganze Zahl, nicht „drei“</td></tr>
+              <tr><td><strong>Länge / Bereich</strong></td><td>Benutzername 3–30 Zeichen, Menge 1–99</td></tr>
+              <tr><td><strong>Format</strong></td><td>Postleitzahl besteht aus 4 Ziffern, Datum ist ein gültiges Datum</td></tr>
+              <tr><td><strong>Erlaubte Werte</strong></td><td>Sortierung nur nach „name“, „preis“ oder „datum“</td></tr>
+              <tr><td><strong>Semantik</strong></td><td>Enddatum liegt nach dem Startdatum, Gutschein gehört zum Konto</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="two-col">
+          <div>
+            <h3 class="mt-0">Allowlist ✔</h3>
+            <p>Beschreibt, was <strong>erlaubt</strong> ist. Alles andere wird abgelehnt. Robust, weil unbekannte Angriffe automatisch nicht passen.</p>
+          </div>
+          <div>
+            <h3 class="mt-0">Denylist ✘</h3>
+            <p>Versucht, <strong>gefährliche</strong> Zeichen oder Wörter zu verbieten. Fast immer umgehbar – durch andere Schreibweisen, Kodierungen oder vergessene Fälle.</p>
+          </div>
+        </div>
+        <div class="callout callout-warning">
+  <div class="callout-icon">&#9888;</div>
+  <div class="callout-body">
+    <div class="callout-title">Validierung allein reicht nicht</div>
+    <p>Ein Kommentarfeld muss Apostrophe erlauben („Peter's Pizza“), ein Namensfeld spitze Klammern
+          vielleicht nicht – aber jede Eingabe, die Text erlaubt, kann gefährliche Zeichen enthalten.
+          Input Validation ist eine wichtige Schicht (Defense in Depth); den eigentlichen Schutz liefern die
+          interpreterspezifischen Maßnahmen in den folgenden Abschnitten. Den Begriff <strong>Input
+          Sanitization</strong> (Eingaben „bereinigen“, etwa Zeichen entfernen) solltest du mit Vorsicht
+          verwenden: Ablehnen ist meist sicherer als stilles Verändern.</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>3 — SQL Injection</h2>
+        <p>
+          Eine SQL Injection entsteht, wenn eine Anwendung SQL-Befehle durch <strong>Zusammensetzen von
+          Zeichenketten</strong> mit Benutzereingaben baut. Beispiel Login: Die Anwendung setzt den
+          eingegebenen Benutzernamen direkt in eine Abfrage der Form „suche den Benutzer, dessen Name
+          gleich <em>Eingabe</em> ist und dessen Passwort-Hash gleich … ist“ ein.
+        </p>
+        <p>
+          Gibt ein Angreifer als Benutzernamen <code>admin' --</code> ein, beendet der Apostroph den Text,
+          und <code>--</code> leitet in SQL einen Kommentar ein. Der Rest der Abfrage – die Passwortprüfung –
+          wird damit auskommentiert. Die Datenbank sucht nur noch nach dem Benutzer „admin“, und der
+          Angreifer ist ohne Passwort angemeldet.
+        </p>
+        <p>Mögliche Folgen einer SQL Injection:</p>
+        <ul>
+          <li>Anmeldung ohne Passwort</li>
+          <li>Auslesen beliebiger Tabellen (Kundendaten, Passwort-Hashes)</li>
+          <li>Ändern oder Löschen von Daten</li>
+          <li>je nach Datenbank sogar Ausführen von Betriebssystembefehlen</li>
+        </ul>
+        <p>Auch wenn die Anwendung keine Ergebnisse anzeigt, können Angreifer Daten Zeichen für Zeichen über Ja/Nein-Fragen oder Antwortzeiten erschließen (<strong>Blind SQL Injection</strong>). Automatisierte Werkzeuge erledigen das in Minuten.</p>
+      </section>
+
+      <section class="section">
+        <h2>4 — Schutz vor SQL Injection</h2>
+        <h3>Prepared Statements (parametrisierte Abfragen)</h3>
+        <p>
+          Bei einem <strong>Prepared Statement</strong> wird die Abfrage mit <strong>Platzhaltern</strong> an die
+          Datenbank geschickt und die Werte <strong>getrennt</strong> davon. Die Datenbank kennt die Struktur
+          der Abfrage, bevor sie die Werte sieht, und behandelt diese ausschließlich als Daten. Ein Apostroph
+          im Benutzernamen ist dann nur ein Apostroph im gesuchten Namen – nie das Ende eines Textes.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Maßnahme</th><th>Wirkung</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Prepared Statements</strong></td><td>Hauptschutz – Daten und Befehl werden getrennt übertragen</td></tr>
+              <tr><td><strong>ORM</strong> (z.&nbsp;B. Prisma, Hibernate, Entity Framework)</td><td>verwendet intern Parameter; Vorsicht bei Funktionen für „rohes“ SQL</td></tr>
+              <tr><td><strong>Allowlist für Bezeichner</strong></td><td>Tabellen- und Spaltennamen (z.&nbsp;B. für Sortierung) lassen sich nicht parametrisieren – nur Werte aus einer festen Liste zulassen</td></tr>
+              <tr><td><strong>Least Privilege</strong></td><td>Datenbank-User der Anwendung darf nur, was er braucht (Lektion 2.4) – begrenzt den Schaden</td></tr>
+              <tr><td>Escaping von Sonderzeichen</td><td>fehleranfällig, nur als letzter Ausweg</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout callout-info">
+  <div class="callout-icon">&#8505;</div>
+  <div class="callout-body">
+    <div class="callout-title">NoSQL Injection</div>
+    <p>Auch Dokumentdatenbanken wie MongoDB sind betroffen: Erwartet die Anwendung im JSON-Body ein
+          Passwort als Text, und ein Angreifer schickt stattdessen ein Objekt mit einem Abfrage-Operator wie
+          <code>$ne</code> („ungleich“), passt die Bedingung auf jedes Passwort. Schutz: Typ jedes Feldes
+          prüfen (Text ist Text) und Abfrage-Operatoren nie aus Benutzereingaben übernehmen.</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>5 — Command Injection</h2>
+        <p>
+          Manche Anwendungen rufen Programme des Betriebssystems auf – etwa ein Netzwerk-Diagnosetool, das
+          <code>ping</code> mit einer vom Benutzer eingegebenen Adresse startet, oder einen Bildkonverter mit
+          dem Dateinamen eines Uploads. Wird dafür eine <strong>Shell</strong> mit zusammengesetztem Befehl
+          verwendet, können Zeichen wie <code>;</code>, <code>&amp;&amp;</code> oder <code>|</code> weitere Befehle
+          anhängen. Ein Angreifer gibt statt einer IP-Adresse z.&nbsp;B. eine Adresse gefolgt von
+          <code>; rm -rf /</code> ein.
+        </p>
+        <ul>
+          <li><strong>Am besten:</strong> keine externen Programme aufrufen, sondern Bibliotheksfunktionen der Programmiersprache verwenden.</li>
+          <li>Falls doch nötig: Programm <strong>ohne Shell</strong> starten und Argumente als getrennte Liste übergeben – dann werden Sonderzeichen nicht interpretiert.</li>
+          <li>Eingaben streng per Allowlist prüfen (z.&nbsp;B. nur gültige IP-Adressen).</li>
+          <li>Prozess mit minimalen Rechten ausführen.</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>6 — Path Traversal</h2>
+        <p>
+          Eine Download-Funktion liefert Dateien aus einem Ordner, der Dateiname kommt aus der URL, z.&nbsp;B.
+          <code>/download?file=bericht.pdf</code>. Mit <code>../</code> („eine Ebene nach oben“) verlässt ein
+          Angreifer den vorgesehenen Ordner: <code>file=../../config/database.yml</code> liefert die
+          Konfigurationsdatei mit dem Datenbank-Passwort. Diese Schwachstelle heißt <strong>Path Traversal</strong>
+          (auch Directory Traversal).
+        </p>
+        <ul>
+          <li><strong>Keine Dateinamen aus Eingaben</strong> verwenden, sondern IDs, die am Server auf einen Dateipfad abgebildet werden.</li>
+          <li>Wenn Dateinamen nötig sind: den Pfad <strong>normalisieren</strong> (alle <code>../</code> auflösen) und prüfen, dass das Ergebnis noch im erlaubten Basisordner liegt.</li>
+          <li>Erlaubte Zeichen und Dateiendungen per Allowlist einschränken.</li>
+          <li>Kodierte Varianten bedenken (<code>%2e%2e%2f</code> ist <code>../</code> in URL-Kodierung) – deshalb erst dekodieren und normalisieren, dann prüfen.</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>7 — File Upload Vulnerabilities</h2>
+        <p>Datei-Uploads (Profilbilder, Dokumente, Abgaben) sind eine der riskantesten Funktionen einer Web-App:</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Risiko</th><th>Beispiel</th></tr></thead>
+            <tbody>
+              <tr><td>Ausführbarer Code</td><td>Eine hochgeladene Skriptdatei (z.&nbsp;B. <code>shell.php</code>) liegt im Webordner und wird beim Aufruf vom Server ausgeführt (<strong>Web Shell</strong>).</td></tr>
+              <tr><td>Gefälschter Typ</td><td>Die Datei heißt <code>bild.jpg</code>, der Browser meldet <code>image/jpeg</code> – der Inhalt ist aber HTML oder ein Skript. Beides kommt vom Client und ist frei wählbar.</td></tr>
+              <tr><td>Aktive Inhalte</td><td>SVG-Bilder und HTML-Dateien können JavaScript enthalten (XSS, Lektion 2.6).</td></tr>
+              <tr><td>Gefährliche Dateinamen</td><td><code>../../index.html</code> überschreibt fremde Dateien (Path Traversal).</td></tr>
+              <tr><td>Ressourcenverbrauch</td><td>Riesige Dateien oder „Zip-Bomben“, die beim Entpacken Gigabytes ergeben.</td></tr>
+              <tr><td>Schadsoftware</td><td>Andere Benutzer laden die Datei herunter und infizieren sich.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>Sicherer Upload – Checkliste</h3>
+        <ul>
+          <li>Erlaubte <strong>Dateiendungen per Allowlist</strong> und zusätzlich den tatsächlichen <strong>Inhalt</strong> prüfen (Dateisignatur, z.&nbsp;B. durch erneutes Einlesen eines Bildes).</li>
+          <li>Datei unter einem <strong>zufälligen, serverseitig erzeugten Namen</strong> speichern.</li>
+          <li><strong>Außerhalb des Webordners</strong> oder in einem separaten Objektspeicher ablegen, nie ausführbar.</li>
+          <li><strong>Größe begrenzen</strong> (pro Datei und pro Benutzer).</li>
+          <li>Beim Ausliefern einen festen Content-Type setzen und Dateien möglichst als Download anbieten bzw. von einer eigenen Domain ausliefern.</li>
+          <li>Bei Bedarf auf Schadsoftware scannen.</li>
+          <li>Berechtigungen prüfen: Wer darf welche Datei hochladen und herunterladen? (Lektion 2.4)</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>8 — Insecure Deserialization</h2>
+        <p>
+          <strong>Serialisierung</strong> wandelt ein Objekt in eine Byte- oder Textfolge um (zum Speichern oder
+          Übertragen), <strong>Deserialisierung</strong> baut daraus wieder ein Objekt. Manche Sprachen bieten
+          dafür eigene Binärformate (Java-Serialisierung, Pythons <code>pickle</code>, PHPs
+          <code>unserialize</code>), die beim Einlesen Objekte beliebiger Klassen erzeugen und dabei Code
+          ausführen können.
+        </p>
+        <p>
+          Kommen solche Daten vom Client – etwa in einem Cookie oder einem versteckten Feld –, kann ein Angreifer
+          präparierte Daten schicken, die beim Deserialisieren <strong>beliebigen Code am Server</strong>
+          ausführen. Diese Klasse von Schwachstellen ist selten, aber besonders folgenschwer.
+        </p>
+        <ul>
+          <li>Keine sprachspezifische Serialisierung für nicht vertrauenswürdige Daten verwenden.</li>
+          <li>Einfache Datenformate wie <strong>JSON</strong> nutzen und gegen ein Schema validieren.</li>
+          <li>Daten, die der Client nicht verändern darf, signieren (wie beim JWT, Lektion 1.4) oder gleich am Server speichern.</li>
+        </ul>
+      </section>
+
+            <section class="section">
+        <h2>9 — Umsetzung: sichere Flugsuche</h2>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">So nicht! – String zusammensetzen</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">// q kommt aus der URL: /flights?q=Wien
+const rows = sqlite
+  .prepare(`SELECT * FROM flights WHERE airport LIKE '%${q}%' ORDER BY ${sort}`)
+  .all();
+// q = "' OR '1'='1"  → liefert alle Flüge
+// sort = "(SELECT password_hash FROM users)" → beliebiges SQL</code></pre>
+</div>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/lib/flight-search.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import { asc, like, sql } from 'drizzle-orm';
+import { z } from 'zod';
+
+import { db } from '@/db';
+import { flights } from '@/db/schema';
+
+// Allowlist für die Sortierung: Spaltennamen kann man nicht parametrisieren
+const SORT_COLUMNS = {
+  time: flights.scheduledTime,
+  airline: flights.airline,
+  airport: flights.airport,
+} as const;
+
+const searchSchema = z.object({
+  q: z.string().trim().max(50).default(''),
+  sort: z.enum(['time', 'airline', 'airport']).default('time'),
+});
+
+export function searchFlights(params: { q?: string; sort?: string }) {
+  const parsed = searchSchema.safeParse(params);
+  const { q, sort } = parsed.success ? parsed.data : { q: '', sort: 'time' as const };
+
+  // Drizzle erzeugt ein Prepared Statement: q wird als Parameter übergeben
+  return db.select().from(flights)
+    .where(like(flights.airport, `%${q}%`))
+    .orderBy(asc(SORT_COLUMNS[sort]))
+    .all();
+}
+
+// Auch eigenes SQL bleibt sicher, solange Werte über ${} im sql-Template stehen
+export function countFlightsByTerminal(terminal: string) {
+  return db.get&lt;{ count: number }&gt;(
+    sql`SELECT count(*) AS count FROM flights WHERE terminal = ${terminal}`,
+  );
+}</code></pre>
+</div>
+        <ul>
+          <li>Drizzle-Funktionen wie <code>like</code> und <code>eq</code> erzeugen Prepared Statements – der Suchbegriff wird als Parameter übergeben.</li>
+          <li>Auch im <code>sql</code>-Template von Drizzle werden Werte in <code>${…}</code> zu Parametern. Gefährlich ist nur <code>sql.raw()</code>, das Text ungeprüft einfügt.</li>
+          <li>Die Sortierspalte lässt sich nicht parametrisieren. Zod lässt nur drei Werte zu (Allowlist), die auf echte Spaltenobjekte abgebildet werden. Ein Wert wie <code>constructor</code> oder <code>__proto__</code> fällt schon bei der Validierung durch.</li>
+        </ul>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/app/flights/page.tsx</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import { searchFlights } from '@/lib/flight-search';
+
+interface FlightsPageProps {
+  searchParams: Promise&lt;{ q?: string; sort?: string }&gt;;
+}
+
+export default async function FlightsPage({ searchParams }: FlightsPageProps) {
+  const flights = searchFlights(await searchParams);
+
+  return (
+    &lt;main&gt;
+      &lt;form&gt;
+        &lt;input name="q" placeholder="Flughafen suchen" maxLength={50} /&gt;
+        &lt;select name="sort"&gt;
+          &lt;option value="time"&gt;Zeit&lt;/option&gt;
+          &lt;option value="airline"&gt;Airline&lt;/option&gt;
+          &lt;option value="airport"&gt;Flughafen&lt;/option&gt;
+        &lt;/select&gt;
+        &lt;button type="submit"&gt;Suchen&lt;/button&gt;
+      &lt;/form&gt;
+      &lt;ul&gt;
+        {flights.map((f) =&gt; &lt;li key={f.id}&gt;{f.scheduledTime} {f.flightNumber} {f.airport}&lt;/li&gt;)}
+      &lt;/ul&gt;
+    &lt;/main&gt;
+  );
+}</code></pre>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>10 — Umsetzung: Programme ohne Shell aufrufen</h2>
+        <p>Das Personal soll prüfen können, ob eine Anzeigetafel im Netz erreichbar ist.</p>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">So nicht! – Shell mit zusammengesetztem Befehl</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import { exec } from 'node:child_process';
+exec(`ping -c 1 ${host}`); // host = "8.8.8.8; cat /etc/passwd"</code></pre>
+</div>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/app/api/diagnose/route.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import { execFile } from 'node:child_process';
+import { isIP } from 'node:net';
+import { promisify } from 'node:util';
+
+import { NextResponse } from 'next/server';
+
+import { getCurrentUser } from '@/lib/auth';
+import { can } from '@/lib/permissions';
+
+const execFileAsync = promisify(execFile);
+
+// GET /api/diagnose?host=10.0.0.5 – Erreichbarkeit einer Anzeigetafel prüfen
+export async function GET(request: Request) {
+  const user = await getCurrentUser();
+  if (!user || !can(user, 'flights:edit')) {
+    return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 });
+  }
+
+  const host = new URL(request.url).searchParams.get('host') ?? '';
+  // Allowlist: nur gültige IP-Adressen, keine Namen, keine Sonderzeichen
+  if (!isIP(host)) return NextResponse.json({ error: 'Ungültige Adresse' }, { status: 400 });
+
+  try {
+    // execFile startet ping OHNE Shell; host ist genau ein Argument
+    await execFileAsync('ping', ['-c', '1', '-W', '2', host], { timeout: 5000 });
+    return NextResponse.json({ reachable: true });
+  } catch {
+    return NextResponse.json({ reachable: false });
+  }
+}</code></pre>
+</div>
+        <p><code>execFile</code> startet das Programm direkt; die Argumente werden als Liste übergeben und nie von einer Shell interpretiert. <code>isIP</code> lässt zusätzlich nur gültige IP-Adressen durch – zwei unabhängige Schichten.</p>
+      </section>
+
+      <section class="section">
+        <h2>11 — Umsetzung: sicherer Datei-Upload</h2>
+        <p>Passagiere können Reisedokumente hochladen (PDF, PNG, JPEG bis 5&nbsp;MB).</p>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/lib/uploads.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import path from 'node:path';
+
+// Außerhalb von public/ – nichts davon ist direkt per URL erreichbar
+export const UPLOAD_DIR = path.resolve(process.env.UPLOAD_DIR ?? 'storage/uploads');
+export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024; // 5 MB
+
+// Allowlist erlaubter Typen mit ihrer Dateisignatur ("Magic Bytes")
+const SIGNATURES = [
+  { type: 'application/pdf', ext: 'pdf', bytes: [0x25, 0x50, 0x44, 0x46] }, // %PDF
+  { type: 'image/png', ext: 'png', bytes: [0x89, 0x50, 0x4e, 0x47] },
+  { type: 'image/jpeg', ext: 'jpg', bytes: [0xff, 0xd8, 0xff] },
+] as const;
+
+/** Bestimmt den Typ aus dem INHALT der Datei, nicht aus Name oder Content-Type. */
+export function detectFileType(data: Buffer) {
+  return SIGNATURES.find((sig) =&gt; sig.bytes.every((b, i) =&gt; data[i] === b)) ?? null;
+}
+
+/** Löst einen Dateinamen auf und prüft, dass er im Upload-Ordner bleibt. */
+export function resolveInsideUploadDir(fileName: string): string | null {
+  const fullPath = path.resolve(UPLOAD_DIR, fileName);
+  return fullPath.startsWith(UPLOAD_DIR + path.sep) ? fullPath : null;
+}</code></pre>
+</div>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/app/api/uploads/route.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import { randomUUID } from 'node:crypto';
+import { mkdir, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+
+import { NextResponse } from 'next/server';
+
+import { getCurrentUser } from '@/lib/auth';
+import { detectFileType, MAX_UPLOAD_BYTES, UPLOAD_DIR } from '@/lib/uploads';
+
+// POST /api/uploads – Bordkarte oder Reisedokument hochladen
+export async function POST(request: Request) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: 'Nicht angemeldet' }, { status: 401 });
+
+  const file = (await request.formData()).get('file');
+  if (!(file instanceof File)) {
+    return NextResponse.json({ error: 'Keine Datei' }, { status: 400 });
+  }
+  if (file.size &gt; MAX_UPLOAD_BYTES) {
+    return NextResponse.json({ error: 'Datei zu groß' }, { status: 413 });
+  }
+
+  const data = Buffer.from(await file.arrayBuffer());
+  const type = detectFileType(data);
+  if (!type) return NextResponse.json({ error: 'Dateityp nicht erlaubt' }, { status: 415 });
+
+  // Zufälliger Name vom Server – der Originalname wird nie als Pfad verwendet
+  const id = `${randomUUID()}.${type.ext}`;
+  await mkdir(path.join(UPLOAD_DIR, String(user.id)), { recursive: true });
+  await writeFile(path.join(UPLOAD_DIR, String(user.id), id), data);
+
+  return NextResponse.json({ id }, { status: 201 });
+}</code></pre>
+</div>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/app/api/uploads/[id]/route.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import { readFile } from 'node:fs/promises';
+
+import { NextResponse } from 'next/server';
+
+import { getCurrentUser } from '@/lib/auth';
+import { detectFileType, resolveInsideUploadDir } from '@/lib/uploads';
+
+interface RouteParams {
+  params: Promise&lt;{ id: string }&gt;;
+}
+
+// GET /api/uploads/:id – nur eigene Dateien, immer als Download
+export async function GET(_request: Request, { params }: RouteParams) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: 'Nicht angemeldet' }, { status: 401 });
+
+  const { id } = await params;
+  // Allowlist für den Namen + Prüfung, dass der Pfad im Ordner des Benutzers bleibt
+  const filePath = /^[0-9a-f-]{36}\.(pdf|png|jpg)$/.test(id)
+    ? resolveInsideUploadDir(`${user.id}/${id}`)
+    : null;
+  if (!filePath) return NextResponse.json({ error: 'Nicht gefunden' }, { status: 404 });
+
+  try {
+    const data = await readFile(filePath);
+    return new NextResponse(new Uint8Array(data), {
+      headers: {
+        'Content-Type': detectFileType(data)?.type ?? 'application/octet-stream',
+        'Content-Disposition': 'attachment', // herunterladen statt im Browser öffnen
+        'X-Content-Type-Options': 'nosniff', // Browser rät den Typ nicht selbst
+      },
+    });
+  } catch {
+    return NextResponse.json({ error: 'Nicht gefunden' }, { status: 404 });
+  }
+}</code></pre>
+</div>
+        <p>So setzt der Code die Checkliste aus Abschnitt 7 um:</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Regel</th><th>Umsetzung</th></tr></thead>
+            <tbody>
+              <tr><td>Typ am Inhalt erkennen</td><td><code>detectFileType</code> prüft die Magic Bytes; Dateiname und Content-Type des Browsers werden ignoriert</td></tr>
+              <tr><td>Größe begrenzen</td><td><code>MAX_UPLOAD_BYTES</code>, Antwort 413</td></tr>
+              <tr><td>zufälliger Name</td><td><code>randomUUID()</code> + Endung aus der Erkennung</td></tr>
+              <tr><td>außerhalb des Webordners</td><td><code>storage/uploads</code> statt <code>public/</code></td></tr>
+              <tr><td>kein Path Traversal</td><td>Allowlist-Regex für die ID und <code>resolveInsideUploadDir</code></td></tr>
+              <tr><td>Berechtigung</td><td>ein Unterordner pro Benutzer – fremde Dateien sind nicht erreichbar</td></tr>
+              <tr><td>sicher ausliefern</td><td><code>Content-Disposition: attachment</code>, <code>X-Content-Type-Options: nosniff</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section section-fehler">
+        <h2>Häufige Fehler</h2>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: SQL durch Zusammensetzen von Strings</div>
+  <p>Eine Suchfunktion baut die Abfrage aus festem SQL-Text und dem Suchbegriff zusammen. Mit einem Apostroph im Suchbegriff lässt sich die Abfrage beliebig verändern.</p>
+          <p class="fehler-fix">Ausschließlich Prepared Statements bzw. die parametrisierten Funktionen des ORM verwenden – auch für „harmlose“ Abfragen.</p>
+</div>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: Denylist statt Allowlist</div>
+  <p>Die Anwendung entfernt das Wort „SELECT“ und den Text <code>../</code> aus Eingaben. Angreifer schreiben „SeLeCt“ oder <code>....//</code> – nach dem Entfernen entsteht wieder <code>../</code>.</p>
+          <p class="fehler-fix">Erlaubte Eingaben per Allowlist beschreiben und unpassende ablehnen; zusätzlich interpreterspezifisch schützen.</p>
+</div>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: Upload in den Webordner</div>
+  <p>Hochgeladene Dateien werden mit ihrem Originalnamen im öffentlichen Ordner gespeichert. Eine hochgeladene Skriptdatei wird beim Aufruf vom Server ausgeführt.</p>
+          <p class="fehler-fix">Zufällige Namen, Speicherung außerhalb des Webordners, Allowlist für Typen und Inhaltsprüfung.</p>
+</div>
+      </section>
+
+      <section class="section section-aufgaben">
+        <h2>Aufgaben</h2>
+        <div class="aufgaben-list">
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 1</span>
+    <span class="aufgabe-title">Interpreter finden</span>
+  </div>
+  <p>Nenne für eine Web-App deiner Wahl alle Stellen, an denen Benutzereingaben an einen Interpreter weitergegeben werden (Datenbank, Dateisystem, Shell, E-Mail-Versand, Browser). Welche Schutzmaßnahme gehört jeweils dazu?</p>
+</div>
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 2</span>
+    <span class="aufgabe-title">Validierung mit Zod</span>
+  </div>
+  <p>Schreibe für das Anmeldeformular eines Sportvereins (Vorname, Nachname, Geburtsdatum, E-Mail, Telefonnummer, Mitgliedsart Kind/Jugend/Erwachsen, Bemerkung) ein Zod-Schema mit Allowlist-Regeln. Bei welchen Feldern ist eine strenge Allowlist nicht möglich – und warum ist das trotzdem kein Problem, wenn die Daten mit Drizzle gespeichert werden?</p>
+</div>
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 3</span>
+    <span class="aufgabe-title">Uploads verwalten</span>
+  </div>
+  <p>Ergänze die Upload-Funktion: eine Tabelle <code>uploads</code> (ID, Benutzer, Originalname, Typ, Größe, Datum), eine Seite „Meine Dokumente“ mit Download-Links und eine Lösch-Funktion. Der Originalname darf angezeigt, aber nie als Pfad verwendet werden. Teste, dass ein zweiter Benutzer weder herunterladen noch löschen kann.</p>
+</div>
+          <div class="aufgabe aufgabe-bonus">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Bonus</span>
+    <span class="aufgabe-title">Übungsumgebung</span>
+  </div>
+  <p>Bearbeite in der kostenlosen Lernplattform <strong>PortSwigger Web Security Academy</strong> das erste SQL-Injection-Lab (nur in dieser dafür vorgesehenen Umgebung – Angriffe auf fremde Systeme sind strafbar). Beschreibe in eigenen Worten, warum der Angriff funktioniert und welche Zeile im Server die Lücke verursacht haben könnte.</p>
+</div>
+        </div>
+      </section>
+
+      <section class="section section-quiz">
+        <h2>Wissenskontrolle</h2>
+        <div class="quiz" id="quiz-1">
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 1</span> Was haben alle Injection-Angriffe gemeinsam?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Sie funktionieren nur bei Datenbanken</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-1"> <span>Benutzereingaben werden von einem Interpreter als Befehl statt als Daten verstanden</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Sie benötigen ein gestohlenes Passwort</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Sie lassen sich durch HTTPS verhindern</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Ob SQL, Shell, Dateisystem oder Browser: Die Ursache ist immer, dass Daten und Befehl vermischt werden. HTTPS schützt die Übertragung, nicht die Verarbeitung am Server.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 2</span> Welche Maßnahme ist der <strong>Hauptschutz</strong> gegen SQL Injection?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Alle Apostrophe aus Eingaben entfernen</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Eingabefelder im Frontend auf 20 Zeichen begrenzen</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-2"> <span>Prepared Statements bzw. parametrisierte Abfragen</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Die Datenbank auf einem anderen Server betreiben</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Prepared Statements übertragen Abfragestruktur und Werte getrennt; Werte können die Struktur nicht verändern. Entfernen von Zeichen ist eine fehleranfällige Denylist, Frontend-Begrenzungen sind umgehbar.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 3</span> Warum ist eine <strong>Allowlist</strong> robuster als eine Denylist?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>Weil sie schneller ausgeführt wird</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-3"> <span>Weil alles, was nicht ausdrücklich erlaubt ist, abgelehnt wird – auch unbekannte Angriffsvarianten</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>Weil sie keine Wartung braucht</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>Weil sie gefährliche Zeichen automatisch kodiert</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Eine Denylist muss jede gefährliche Variante kennen und wird durch andere Schreibweisen oder Kodierungen umgangen. Eine Allowlist beschreibt das Gewünschte; alles andere fällt automatisch heraus.</div>
+  </div>
+  <div class="quiz-frage" data-multi="1">
+    <p class="quiz-q"><span class="quiz-num">Frage 4</span> Eine Download-Funktion erhält <code>file=../../config/secrets.env</code>. Welche Maßnahmen schützen?</p>
+    <p class="quiz-hint">Mehrere Antworten sind richtig.</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-4"> <span>Statt Dateinamen IDs verwenden, die am Server auf Pfade abgebildet werden</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-4"> <span>Pfad normalisieren und prüfen, dass er im erlaubten Basisordner liegt</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-4"> <span>Die Zeichenfolge <code>../</code> einmal aus der Eingabe entfernen</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-4"> <span>Den Download nur über POST erlauben</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Das ist Path Traversal. IDs statt Dateinamen oder eine Normalisierung mit anschließender Prüfung des Basisordners schützen. Einmaliges Entfernen von <code>../</code> lässt sich mit <code>....//</code> umgehen, die HTTP-Methode spielt keine Rolle.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 5</span> Welche Aussage zu Datei-Uploads ist richtig?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span>Der vom Browser gemeldete Content-Type ist zuverlässig und reicht zur Prüfung</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span>Der Originaldateiname sollte beibehalten werden, damit Benutzer ihre Dateien wiederfinden</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-5"> <span>Dateien sollten mit zufälligem Namen außerhalb des Webordners gespeichert werden</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span>SVG-Dateien sind als Bilder immer ungefährlich</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Content-Type und Dateiname kommen vom Client und sind frei wählbar. Zufällige Namen außerhalb des Webordners verhindern Überschreiben und Ausführen. SVG kann JavaScript enthalten. Den Originalnamen kann man in der Datenbank speichern und nur zur Anzeige verwenden.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 6</span> Welche Drizzle-Abfrage ist anfällig für SQL Injection, wenn <code>q</code> vom Benutzer kommt?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span><code>db.select().from(flights).where(eq(flights.airport, q))</code></span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span><code>db.all(sql`SELECT * FROM flights WHERE airport = ${q}`)</code></span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-6"> <span><code>db.all(sql.raw(`SELECT * FROM flights WHERE airport = '${q}'`))</code></span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span><code>db.select().from(flights).where(like(flights.airport, `%${q}%`))</code></span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> <code>eq</code>, <code>like</code> und Werte im <code>sql</code>-Template werden als Parameter übergeben. <code>sql.raw</code> fügt den fertigen Text ungeprüft ein – hier wurde der Wert vorher per JavaScript-Template-String eingesetzt, genau wie beim klassischen Zusammensetzen.</div>
+  </div>
+  <div class="quiz-summary"><span class="quiz-score"></span><button type="button" class="quiz-reset">Zur&uuml;cksetzen</button></div>
+</div>
+      </section>
+
+    </div>
+
+    <nav class="lesson-nav">
+      <a class="nav-btn" href="2.4-access-control.html">&larr; Lektion 2.4: Authorization &amp; Access Control</a>
+      <span class="nav-center-info">Lektion 2.5</span>
+      <a class="nav-btn primary" href="2.6-xss-csrf.html">Lektion 2.6: XSS, CSRF &amp; Clickjacking &rarr;</a>
+    </nav>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>
+    const ham = document.getElementById('hamburger');
+    const sb = document.getElementById('sidebar');
+    const ov = document.getElementById('overlay');
+    ham.addEventListener('click', () => { sb.classList.toggle('open'); ov.classList.toggle('visible'); });
+    ov.addEventListener('click', () => { sb.classList.remove('open'); ov.classList.remove('visible'); });
+    const cur = window.location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.nav-link').forEach(l => {
+      if (l.getAttribute('href') === cur) l.classList.add('active');
+    });
+    const themeBtn = document.getElementById('theme-toggle');
+    const applyTheme = (t) => {
+      document.documentElement.setAttribute('data-theme', t);
+      if (themeBtn) themeBtn.innerHTML = t === 'dark' ? '&#9728;' : '&#9790;';
+    };
+    applyTheme(localStorage.getItem('kurs-theme') || 'dark');
+    setTimeout(() => document.documentElement.classList.add('theme-transitions'), 50);
+    if (themeBtn) themeBtn.addEventListener('click', () => {
+      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('kurs-theme', next);
+      applyTheme(next);
+    });
+    hljs.highlightAll();
+  </script>
+  <script>
+    document.querySelectorAll('.quiz').forEach((quiz) => {
+      const fragen = [...quiz.querySelectorAll('.quiz-frage')];
+      const score = quiz.querySelector('.quiz-score');
+      const update = () => {
+        const done = fragen.filter((f) => f.dataset.state).length;
+        const ok = fragen.filter((f) => f.dataset.state === 'ok').length;
+        score.textContent = done === 0
+          ? fragen.length + ' Fragen – wähle eine Antwort und prüfe sie.'
+          : ok + ' von ' + fragen.length + ' richtig'
+            + (done < fragen.length ? ' (' + done + ' von ' + fragen.length + ' bearbeitet)' : '');
+      };
+      fragen.forEach((f) => {
+        const inputs = [...f.querySelectorAll('input')];
+        const check = f.querySelector('.quiz-check');
+        const reveal = f.querySelector('.quiz-reveal');
+        const fb = f.querySelector('.quiz-feedback');
+        const exp = f.querySelector('.quiz-erklaerung');
+        inputs.forEach((i) => i.addEventListener('change', () => {
+          check.disabled = !inputs.some((x) => x.checked);
+        }));
+        const finish = (graded) => {
+          let allOk = true;
+          f.querySelectorAll('.quiz-opt').forEach((li) => {
+            const input = li.querySelector('input');
+            const corr = li.dataset.correct === '1';
+            if (corr !== input.checked) allOk = false;
+            if (corr) li.classList.add('opt-correct');
+            else if (input.checked) li.classList.add('opt-wrong');
+            input.disabled = true;
+          });
+          f.dataset.state = !graded ? 'shown' : (allOk ? 'ok' : 'wrong');
+          fb.className = 'quiz-feedback fb-' + f.dataset.state;
+          fb.textContent = !graded ? 'Lösung angezeigt.'
+            : (allOk ? '✔ Richtig!' : '✘ Leider nicht ganz – die richtige Lösung ist markiert.');
+          fb.hidden = false;
+          exp.hidden = false;
+          check.disabled = true;
+          reveal.disabled = true;
+          update();
+        };
+        check.addEventListener('click', () => finish(true));
+        reveal.addEventListener('click', () => finish(false));
+      });
+      quiz.querySelector('.quiz-reset').addEventListener('click', () => {
+        fragen.forEach((f) => {
+          delete f.dataset.state;
+          f.querySelectorAll('.quiz-opt').forEach((li) => li.classList.remove('opt-correct', 'opt-wrong'));
+          f.querySelectorAll('input').forEach((i) => { i.checked = false; i.disabled = false; });
+          f.querySelector('.quiz-check').disabled = true;
+          f.querySelector('.quiz-reveal').disabled = false;
+          f.querySelector('.quiz-feedback').hidden = true;
+          f.querySelector('.quiz-erklaerung').hidden = true;
+        });
+        update();
+      });
+      update();
+    });
+  </script>
+</body>
+
+</html>

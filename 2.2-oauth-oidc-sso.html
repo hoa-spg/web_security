@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<!-- GENERIERT von kurse/_build (web_security) – nicht direkt bearbeiten!
+     Quelle: kurse/_build/web_security/lessons/, bauen: python3 _build/build.py web_security -->
+<html lang="de">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2.2 &ndash; OAuth 2.0, OpenID Connect &amp; SSO | Web Security &amp; Identity Kurs</title>
+  <script>(function () { var t = localStorage.getItem('kurs-theme') || 'dark'; document.documentElement.setAttribute('data-theme', t); })();</script>
+  <link rel="stylesheet" href="assets/kurs.css">
+  <link rel="stylesheet" id="hljs-theme"
+    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+
+<body>
+
+  <button class="hamburger" id="hamburger" aria-label="Navigation &ouml;ffnen">&#9776;</button>
+  <div class="sidebar-overlay" id="overlay"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <a href="index.html">
+        <span class="brand-icon">&#128274;</span>
+        <div>
+          <div class="brand-name">Web Security</div>
+          <div class="brand-sub">Web- und Mobile Computing</div>
+        </div>
+      </a>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Dark/Light Mode"
+        title="Theme wechseln">&#9728;</button>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group">
+        <div class="nav-group-label sec-label">Teil 1 &mdash; Konzepte</div>
+        <a class="nav-link" href="1.1-grundlagen.html"><span class="ln">1.1</span>Grundlagen der Web-Security</a>
+        <a class="nav-link" href="1.2-passwoerter.html"><span class="ln">1.2</span>Passwörter sicher speichern</a>
+        <a class="nav-link" href="1.3-sessions-cookies.html"><span class="ln">1.3</span>Sessions &amp; Cookies</a>
+        <a class="nav-link" href="1.4-jwt-tokens.html"><span class="ln">1.4</span>JWT &amp; Token-basierte Authentifizierung</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label secdev-label">Teil 2 &mdash; Umsetzung mit Next.js</div>
+        <a class="nav-link" href="2.1-login-sessions.html"><span class="ln">2.1</span>Login &amp; Sessions in Next.js</a>
+        <a class="nav-link" href="2.2-oauth-oidc-sso.html"><span class="ln">2.2</span>OAuth 2.0, OpenID Connect &amp; SSO</a>
+        <a class="nav-link" href="2.3-mfa-passkeys.html"><span class="ln">2.3</span>MFA, TOTP &amp; Passkeys</a>
+        <a class="nav-link" href="2.4-access-control.html"><span class="ln">2.4</span>Authorization &amp; Access Control</a>
+        <a class="nav-link" href="2.5-injection.html"><span class="ln">2.5</span>Injection &amp; unsichere Eingaben</a>
+        <a class="nav-link" href="2.6-xss-csrf.html"><span class="ln">2.6</span>XSS, CSRF &amp; Clickjacking</a>
+        <a class="nav-link" href="2.7-api-security.html"><span class="ln">2.7</span>API Security</a>
+        <a class="nav-link" href="2.8-secure-development.html"><span class="ln">2.8</span>Secure Development &amp; OWASP</a>
+      </div>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <header class="lesson-header">
+      <p class="lesson-eyebrow">Lektion 2.2 &mdash; Teil 2: Umsetzung mit Next.js</p>
+      <h1>OAuth 2.0, OpenID Connect &amp; SSO</h1>
+      <div class="lesson-tags">
+        <span class="tag tag-secdev">Identity</span>
+        <span class="tag tag-time">ca. 60 min</span>
+        <span class="tag tag-level">Grundlagen</span>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <section class="section section-lernziele">
+        <h2>Lernziele</h2>
+        <ul class="lernziele-list">
+          <li>Erklären, welches Problem OAuth 2.0 löst</li>
+          <li>Die vier Rollen in OAuth 2.0 sowie Scopes und Consent beschreiben</li>
+          <li>Den Authorization Code Flow mit PKCE Schritt für Schritt erklären</li>
+          <li>Den Unterschied zwischen OAuth 2.0 (Autorisierung) und OpenID Connect (Authentifizierung) erklären</li>
+          <li>Access Token und ID Token unterscheiden</li>
+          <li>Single Sign-On und Identity Federation mit Vor- und Nachteilen beschreiben</li>
+                  <li>„Anmelden mit …“ mit <code>openid-client</code> in Next.js umsetzen</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>1 — Das Problem: Passwörter weitergeben</h2>
+        <p>
+          Eine Fotodruck-App möchte auf deine Bilder in einem Cloud-Speicher zugreifen. Früher hätte die
+          App einfach nach deinem Cloud-Passwort gefragt. Damit hätte sie aber <strong>vollen Zugriff</strong>
+          auf alles gehabt – E-Mails, Dokumente, Kontoeinstellungen –, und zwar unbegrenzt, bis du dein
+          Passwort änderst.
+        </p>
+        <p>
+          <strong>OAuth 2.0</strong> (RFC&nbsp;6749) löst das: Statt des Passworts erhält die App ein
+          <strong>Access Token</strong> mit eingeschränkten Rechten („nur Fotos lesen“), das zeitlich begrenzt
+          ist und jederzeit widerrufen werden kann. Dein Passwort gibst du nur beim Anbieter selbst ein.
+        </p>
+        <div class="callout callout-info">
+  <div class="callout-icon">&#8505;</div>
+  <div class="callout-body">
+    <div class="callout-title">Delegierte Autorisierung</div>
+    <p>OAuth ist ein Standard für <strong>delegierte Autorisierung</strong>: Du erlaubst einer Anwendung,
+          in deinem Namen auf eine bestimmte Ressource zuzugreifen. Das Access Token kennst du bereits als
+          Bearer Token aus Lektion 1.4.</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>2 — Rollen, Scopes und Consent</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Rolle</th><th>Bedeutung</th><th>Im Beispiel</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Resource Owner</strong></td><td>Wem gehören die Daten?</td><td>du</td></tr>
+              <tr><td><strong>Client</strong></td><td>Anwendung, die zugreifen möchte</td><td>Fotodruck-App</td></tr>
+              <tr><td><strong>Authorization Server</strong></td><td>prüft die Identität, holt die Zustimmung ein und stellt Tokens aus</td><td>Login-Server des Cloud-Anbieters</td></tr>
+              <tr><td><strong>Resource Server</strong></td><td>API, die die Daten bereitstellt und Access Tokens prüft</td><td>Foto-API des Cloud-Anbieters</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <ul>
+          <li><strong>Scopes</strong> beschreiben, welche Rechte der Client anfordert, z.&nbsp;B. <code>photos.read</code> oder <code>calendar.write</code>. Das Access Token enthält nur die gewährten Scopes.</li>
+          <li><strong>Consent</strong> ist die Zustimmung des Benutzers: „Die App Fotodruck möchte deine Fotos sehen. Erlauben?“</li>
+          <li>Jeder Client wird beim Authorization Server <strong>registriert</strong> und erhält eine <code>client_id</code>; Clients mit eigenem Backend zusätzlich ein <code>client_secret</code>.</li>
+        </ul>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Client-Typ</th><th>Beispiel</th><th>Kann ein Secret geheim halten?</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Confidential Client</strong></td><td>Web-App mit eigenem Backend</td><td>ja, es liegt am Server</td></tr>
+              <tr><td><strong>Public Client</strong></td><td>Single-Page-App, Mobile-App</td><td>nein – der Code ist auf dem Gerät des Benutzers lesbar</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>3 — Der Authorization Code Flow mit PKCE</h2>
+        <p>
+          OAuth beschreibt mehrere Abläufe (<strong>Flows</strong> bzw. <strong>Grant Types</strong>). Für
+          Anwendungen, in denen sich ein Mensch anmeldet, ist der <strong>Authorization Code Flow mit
+          PKCE</strong> der empfohlene Standard – für Web-, Single-Page- und Mobile-Apps.
+        </p>
+        <figure class="figure">
+  <div class="figure-img"><img src="assets/img/oauth-code-flow.svg" alt="Authorization Code Flow mit PKCE" loading="lazy" style="max-width:720px"></div>
+  <figcaption>Authorization Code Flow mit PKCE</figcaption>
+</figure>
+        <ol>
+          <li>Der Benutzer klickt in der App auf „Anmelden mit …“.</li>
+          <li>Die App leitet den Browser zum Authorization Server weiter. In der URL stehen u.&nbsp;a. <code>client_id</code>, die gewünschten Scopes, die <code>redirect_uri</code> (wohin danach zurück?), ein zufälliger <code>state</code> und eine <code>code_challenge</code>.</li>
+          <li>Der Benutzer meldet sich <strong>beim Authorization Server</strong> an (inkl. MFA) und stimmt zu.</li>
+          <li>Der Authorization Server leitet zurück zur <code>redirect_uri</code> und hängt einen kurzlebigen, einmal verwendbaren <strong>Authorization Code</strong> sowie den <code>state</code> an.</li>
+          <li>Die App tauscht den Code direkt beim Authorization Server (ohne Browser, „Back-Channel“) gegen Tokens ein und schickt dabei den <code>code_verifier</code> mit.</li>
+          <li>Sie erhält ein Access Token, ggf. ein Refresh Token und – bei OpenID Connect – ein ID Token.</li>
+          <li>Mit dem Access Token ruft die App die API auf.</li>
+        </ol>
+        <h3>Wozu state und PKCE?</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Parameter</th><th>Funktionsweise</th><th>Schützt gegen</th></tr></thead>
+            <tbody>
+              <tr><td><strong>state</strong></td><td>Zufallswert, den die App vor der Weiterleitung speichert und nach der Rückkehr vergleicht</td><td>untergeschobene Antworten (CSRF auf den Login-Ablauf)</td></tr>
+              <tr><td><strong>PKCE</strong> (Proof Key for Code Exchange, „pixie“)</td><td>Die App erzeugt ein Geheimnis (<code>code_verifier</code>) und schickt anfangs nur dessen Hash (<code>code_challenge</code>). Beim Eintauschen muss sie das Original vorlegen.</td><td>gestohlene Authorization Codes – ohne <code>code_verifier</code> sind sie wertlos</td></tr>
+              <tr><td><strong>redirect_uri</strong> (exakt registriert)</td><td>Der Authorization Server leitet nur an vorher registrierte, exakt übereinstimmende Adressen weiter</td><td>Umleitung des Codes auf eine Angreifer-Seite</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>4 — Weitere Grant Types</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Grant Type</th><th>Einsatz</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Authorization Code + PKCE</strong></td><td>Benutzer meldet sich in Web-, SPA- oder Mobile-App an</td><td>empfohlen</td></tr>
+              <tr><td><strong>Client Credentials</strong></td><td>Maschine-zu-Maschine: ein Backend-Dienst ruft eine API auf, ohne dass ein Benutzer beteiligt ist</td><td>empfohlen</td></tr>
+              <tr><td><strong>Device Authorization</strong></td><td>Geräte ohne bequeme Tastatur (Smart-TV, CLI): Code am Handy bestätigen</td><td>empfohlen</td></tr>
+              <tr><td><strong>Refresh Token</strong></td><td>neues Access Token holen (Lektion 1.4)</td><td>empfohlen</td></tr>
+              <tr><td>Implicit</td><td>Token direkt in der Redirect-URL, früher für SPAs</td><td><strong>veraltet</strong> – Token landet im Browser-Verlauf</td></tr>
+              <tr><td>Resource Owner Password Credentials</td><td>App sammelt das Passwort selbst ein</td><td><strong>veraltet</strong> – widerspricht der Idee von OAuth</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout callout-info">
+  <div class="callout-icon">&#8505;</div>
+  <div class="callout-body">
+    <div class="callout-title">OAuth 2.1</div>
+    <p>Die überarbeitete Fassung <strong>OAuth 2.1</strong> fasst die Best Practices zusammen: PKCE für
+          alle Clients, exakter Vergleich der <code>redirect_uri</code>, kein Implicit und kein Password Grant.</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>5 — OpenID Connect: Authentifizierung auf Basis von OAuth</h2>
+        <p>
+          OAuth beantwortet „Darf diese App auf die Fotos zugreifen?“, aber nicht „Wer ist der Benutzer?“.
+          Ein Access Token ist für die <strong>API</strong> bestimmt, nicht für die App – die App soll es nicht
+          interpretieren. Trotzdem wurde OAuth früher oft als Login missbraucht, mit eigenen, teils unsicheren
+          Lösungen je Anbieter.
+        </p>
+        <p>
+          <strong>OpenID Connect (OIDC)</strong> ist eine standardisierte Identitätsschicht über OAuth 2.0.
+          Fordert die App den Scope <code>openid</code> an, erhält sie zusätzlich ein <strong>ID Token</strong>:
+          ein JWT, das bestätigt, wer sich wann bei wem angemeldet hat.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th></th><th>Access Token</th><th>ID Token</th></tr></thead>
+            <tbody>
+              <tr><td>Standard</td><td>OAuth 2.0</td><td>OpenID Connect</td></tr>
+              <tr><td>Zweck</td><td>Zugriff auf eine API (Autorisierung)</td><td>Nachweis der Anmeldung (Authentifizierung)</td></tr>
+              <tr><td>Empfänger (<code>aud</code>)</td><td>Resource Server / API</td><td>die Client-App selbst</td></tr>
+              <tr><td>Format</td><td>beliebig (oft JWT)</td><td>immer JWT</td></tr>
+              <tr><td>An APIs schicken?</td><td>ja</td><td>nein</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Weitere Bausteine von OIDC:</p>
+        <ul>
+          <li><strong>Standard-Claims</strong> wie <code>sub</code>, <code>email</code>, <code>email_verified</code>, <code>name</code> und die Scopes <code>profile</code> und <code>email</code></li>
+          <li><strong>nonce</strong>: Zufallswert, den die App mitschickt und im ID Token wiederfinden muss (gegen das Wiedereinspielen alter Tokens)</li>
+          <li><strong>UserInfo-Endpunkt</strong>: liefert weitere Profildaten gegen ein Access Token</li>
+          <li><strong>Discovery</strong>: Unter <code>/.well-known/openid-configuration</code> veröffentlicht jeder Anbieter seine Endpunkte und Schlüssel – Bibliotheken konfigurieren sich damit fast automatisch</li>
+        </ul>
+        <div class="callout callout-tip">
+  <div class="callout-icon">&#128161;</div>
+  <div class="callout-body">
+    <div class="callout-title">Merksatz</div>
+    <strong>OAuth 2.0</strong> = Autorisierung („Was darf die App?“) &nbsp;·&nbsp; <strong>OpenID Connect</strong>
+          = Authentifizierung („Wer ist der Benutzer?“). „Login mit Google/Microsoft/Apple“ ist OpenID Connect.
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>6 — Single Sign-On und Identity Federation</h2>
+        <p>
+          Bei <strong>Single Sign-On (SSO)</strong> meldet sich ein Benutzer einmal bei einem zentralen
+          <strong>Identity Provider (IdP)</strong> an und kann danach mehrere Anwendungen nutzen, ohne sich
+          erneut anzumelden. Die Anwendungen heißen in diesem Zusammenhang <strong>Service Provider</strong>
+          oder Relying Party – sie verlassen sich auf die Aussage des IdP.
+        </p>
+        <ul>
+          <li><strong>Unternehmen/Schulen:</strong> ein Konto (z.&nbsp;B. Microsoft Entra ID, Google Workspace, Keycloak) für E-Mail, Lernplattform, Wiki usw.</li>
+          <li><strong>Social Login:</strong> „Login mit Google/Apple/GitHub“ für öffentliche Web-Apps</li>
+          <li><strong>Identity Federation:</strong> Organisationen vertrauen gegenseitig ihren Identity Providern – z.&nbsp;B. Studierende melden sich mit dem Konto ihrer Heimatuniversität bei einer anderen Uni an.</li>
+        </ul>
+        <p>Technisch wird SSO heute meist mit <strong>OpenID Connect</strong> umgesetzt, in älteren Unternehmensumgebungen auch mit dem XML-basierten <strong>SAML 2.0</strong>.</p>
+        <div class="two-col">
+          <div>
+            <h3 class="mt-0">Vorteile</h3>
+            <ul>
+              <li>Ein Passwort statt vieler → weniger Wiederverwendung</li>
+              <li>MFA und Passwortregeln zentral durchsetzbar</li>
+              <li>Austritt aus der Organisation: ein Konto sperren, alle Zugänge weg</li>
+              <li>Die eigene App speichert keine Passwörter</li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="mt-0">Nachteile</h3>
+            <ul>
+              <li>Der IdP ist ein Single Point of Failure – fällt er aus, geht nirgends ein Login</li>
+              <li>Ein übernommenes IdP-Konto öffnet alle Anwendungen</li>
+              <li>Abmelden aus allen Anwendungen (Single Logout) ist technisch schwierig</li>
+              <li>Abhängigkeit vom Anbieter</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>7 — Regeln für die eigene Implementierung</h2>
+        <ul>
+          <li>Eine <strong>zertifizierte, gepflegte Bibliothek</strong> verwenden, nicht den Flow selbst programmieren.</li>
+          <li>Immer <strong>Authorization Code + PKCE</strong>, <code>state</code> und (bei OIDC) <code>nonce</code> verwenden.</li>
+          <li><strong>Redirect-URIs exakt</strong> registrieren, keine Platzhalter wie <code>https://*.shop.example</code>.</li>
+          <li><strong>Minimale Scopes</strong> anfordern (Least Privilege).</li>
+          <li>Das <strong>ID Token validieren</strong> (Signatur, <code>iss</code>, <code>aud</code> = eigene <code>client_id</code>, <code>exp</code>, <code>nonce</code>), bevor du den Benutzer als angemeldet betrachtest.</li>
+          <li>Konten über den Claim <code>sub</code> (zusammen mit <code>iss</code>) zuordnen, nicht über die E-Mail-Adresse – E-Mail-Adressen können sich ändern oder unbestätigt sein.</li>
+          <li><code>client_secret</code> nie in Frontend- oder Mobile-Code einbauen.</li>
+        </ul>
+      </section>
+
+            <section class="section">
+        <h2>8 — Umsetzung: „Anmelden mit …“ im FlugBoard</h2>
+        <p>
+          Wir ergänzen das Login aus Lektion 2.1 um OpenID Connect. Statt den Flow selbst zu programmieren,
+          verwenden wir die zertifizierte Bibliothek <code>openid-client</code>. Sie funktioniert mit jedem
+          OIDC-Anbieter (Google, Microsoft Entra ID, Keycloak, …).
+        </p>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">Terminal</span>
+    <span class="code-lang">Bash</span>
+  </div>
+  <pre><code class="language-bash">npm install openid-client</code></pre>
+</div>
+        <h3>Vorbereitung beim Identity Provider</h3>
+        <ol>
+          <li>Beim Anbieter eine Anwendung registrieren (z.&nbsp;B. Google Cloud Console → „OAuth-Client-ID“, Typ Webanwendung).</li>
+          <li>Als Redirect-URI <strong>exakt</strong> <code>http://localhost:3000/login/oidc/callback</code> eintragen.</li>
+          <li><code>client_id</code> und <code>client_secret</code> in <code>.env.local</code> speichern – nie ins Repository.</li>
+        </ol>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">.env.local</span>
+    <span class="code-lang">Bash</span>
+  </div>
+  <pre><code class="language-bash">APP_URL=http://localhost:3000
+OIDC_ISSUER=https://accounts.google.com
+OIDC_CLIENT_ID=123456789-abc.apps.googleusercontent.com
+OIDC_CLIENT_SECRET=GOCSPX-…</code></pre>
+</div>
+
+        <h3>Datenmodell</h3>
+        <p>Benutzer können jetzt auch ohne Passwort existieren. Zum Zuordnen merken wir uns Aussteller und <code>sub</code> – zusammen eindeutig:</p>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/db/schema.ts (Änderungen an users)</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">  passwordHash: text('password_hash'), // NEU: null bei reinem OIDC-Login
+  // …
+  oidcIssuer: text('oidc_issuer'), // NEU: z. B. https://accounts.google.com
+  oidcSubject: text('oidc_subject'), // NEU: Claim sub
+},
+(table) =&gt; ({
+  oidcIdx: uniqueIndex('users_oidc_idx').on(table.oidcIssuer, table.oidcSubject),
+}),</code></pre>
+</div>
+        <p>Das Login aus Lektion 2.1 funktioniert unverändert: Für Konten ohne Passwort-Hash wird gegen <code>dummyHash</code> geprüft – und das schlägt immer fehl.</p>
+
+        <h3>Konfiguration per Discovery</h3>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/lib/oidc.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import * as client from 'openid-client';
+
+let config: client.Configuration | undefined;
+
+/** Lädt einmalig das Discovery-Dokument des Identity Providers. */
+export async function getOidcConfig(): Promise&lt;client.Configuration&gt; {
+  config ??= await client.discovery(
+    new URL(process.env.OIDC_ISSUER!), // z. B. https://accounts.google.com
+    process.env.OIDC_CLIENT_ID!,
+    process.env.OIDC_CLIENT_SECRET!, // bleibt am Server (Confidential Client)
+  );
+  return config;
+}
+
+export const REDIRECT_URI = `${process.env.APP_URL}/login/oidc/callback`;
+export const OIDC_COOKIE = 'oidc_flow';</code></pre>
+</div>
+
+        <h3>Schritt 1: Weiterleitung zum Identity Provider</h3>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/app/login/oidc/route.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+import * as client from 'openid-client';
+
+import { getOidcConfig, OIDC_COOKIE, REDIRECT_URI } from '@/lib/oidc';
+
+// GET /login/oidc – startet den Authorization Code Flow mit PKCE
+export async function GET() {
+  const config = await getOidcConfig();
+
+  const codeVerifier = client.randomPKCECodeVerifier();
+  const state = client.randomState();
+  const nonce = client.randomNonce();
+
+  // Zufallswerte für die Rückkehr merken: kurzlebiges, HttpOnly-Cookie
+  const cookieStore = await cookies();
+  cookieStore.set(OIDC_COOKIE, JSON.stringify({ codeVerifier, state, nonce }), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax', // muss bei der Rückleitung vom IdP mitgeschickt werden
+    path: '/login/oidc',
+    maxAge: 10 * 60,
+  });
+
+  const url = client.buildAuthorizationUrl(config, {
+    redirect_uri: REDIRECT_URI,
+    scope: 'openid email', // minimale Scopes
+    code_challenge: await client.calculatePKCECodeChallenge(codeVerifier),
+    code_challenge_method: 'S256',
+    state,
+    nonce,
+  });
+  redirect(url.href);
+}</code></pre>
+</div>
+        <p>
+          <code>codeVerifier</code>, <code>state</code> und <code>nonce</code> sind zufällige Werte, die wir bei der
+          Rückkehr wieder brauchen. Sie liegen in einem kurzlebigen <code>HttpOnly</code>-Cookie, das nur unter
+          <code>/login/oidc</code> mitgeschickt wird. <code>SameSite=Lax</code> ist hier nötig: Die Rückleitung
+          vom Identity Provider ist eine Cross-Site-Navigation, bei <code>Strict</code> fehlte das Cookie.
+        </p>
+
+        <h3>Schritt 2: Rückkehr, Code eintauschen, Benutzer anmelden</h3>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/app/login/oidc/callback/route.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import { and, eq } from 'drizzle-orm';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+import * as client from 'openid-client';
+
+import { db } from '@/db';
+import { users } from '@/db/schema';
+import { getOidcConfig, OIDC_COOKIE } from '@/lib/oidc';
+import { createSession } from '@/lib/session';
+
+// GET /login/oidc/callback?code=…&amp;state=… – Rückkehr vom Identity Provider
+export async function GET(request: Request) {
+  const cookieStore = await cookies();
+  const saved = cookieStore.get(OIDC_COOKIE)?.value;
+  cookieStore.delete(OIDC_COOKIE); // Werte sind nur einmal gültig
+  if (!saved) redirect('/login?error=oidc');
+  const { codeVerifier, state, nonce } = JSON.parse(saved);
+
+  let claims: client.IDToken | undefined;
+  try {
+    // Tauscht den Code gegen Tokens und prüft dabei state, PKCE und das
+    // ID Token (Signatur, iss, aud, exp, nonce)
+    const tokens = await client.authorizationCodeGrant(
+      await getOidcConfig(),
+      new URL(request.url),
+      { pkceCodeVerifier: codeVerifier, expectedState: state, expectedNonce: nonce },
+    );
+    claims = tokens.claims();
+  } catch {
+    claims = undefined;
+  }
+  if (!claims) redirect('/login?error=oidc');
+
+  // Konto über Aussteller + sub zuordnen – nicht über die E-Mail-Adresse
+  let user = db.select({ id: users.id }).from(users)
+    .where(and(eq(users.oidcIssuer, claims.iss), eq(users.oidcSubject, claims.sub)))
+    .get();
+
+  if (!user) {
+    const email = claims.email_verified === true &amp;&amp; typeof claims.email === 'string'
+      ? claims.email.toLowerCase()
+      : null;
+    if (!email) redirect('/login?error=oidc');
+
+    // Bestehende Passwort-Konten nicht automatisch übernehmen
+    const taken = db.select({ id: users.id }).from(users)
+      .where(eq(users.email, email)).get();
+    if (taken) redirect('/login?error=exists');
+
+    user = db.insert(users)
+      .values({ email, oidcIssuer: claims.iss, oidcSubject: claims.sub })
+      .returning({ id: users.id }).get();
+  }
+
+  await createSession(user.id);
+  redirect('/konto');
+}</code></pre>
+</div>
+        <ul>
+          <li><code>authorizationCodeGrant</code> prüft <code>state</code>, schickt den <code>code_verifier</code> (PKCE) mit und validiert das ID Token vollständig. Schlägt etwas fehl, wirft die Funktion einen Fehler.</li>
+          <li>Das Konto wird über <code>iss</code> + <code>sub</code> gefunden. Neue Konten entstehen nur mit einer vom Anbieter <strong>bestätigten</strong> E-Mail-Adresse (<code>email_verified</code>).</li>
+          <li>Existiert die Adresse bereits als Passwort-Konto, wird es <strong>nicht</strong> automatisch verknüpft – sonst könnte, wer bei irgendeinem Anbieter diese Adresse kontrolliert, das Konto übernehmen.</li>
+          <li>Am Ende steht dieselbe <code>createSession</code> wie beim Passwort-Login: Ab hier ist alles wie in Lektion 2.1.</li>
+          <li><code>redirect()</code> steht bewusst <em>außerhalb</em> des <code>try</code>-Blocks: Es funktioniert intern über einen Fehler, den <code>catch</code> sonst abfangen würde.</li>
+        </ul>
+
+        <h3>Button auf der Login-Seite</h3>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/app/login/page.tsx (Ergänzung)</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">{/* &lt;a&gt; statt &lt;Link&gt;: Link würde die Route vorab laden (Prefetch) */}
+&lt;a href="/login/oidc"&gt;Mit Google anmelden&lt;/a&gt;</code></pre>
+</div>
+      </section>
+
+      <section class="section section-fehler">
+        <h2>Häufige Fehler</h2>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: Access Token als Login-Nachweis</div>
+  <p>Die App betrachtet jeden als angemeldet, der irgendein gültiges Access Token vorlegt. Ein Angreifer verwendet ein Token, das eigentlich für eine ganz andere App ausgestellt wurde.</p>
+          <p class="fehler-fix">Für die Anmeldung OpenID Connect verwenden und das ID Token prüfen – insbesondere, dass <code>aud</code> die eigene <code>client_id</code> ist.</p>
+</div>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: Unscharfe Redirect-URI</div>
+  <p>Als Redirect-URI ist ein Muster registriert, das auch Adressen erlaubt, die ein Angreifer kontrolliert. Der Authorization Code wird dorthin geschickt und gestohlen.</p>
+          <p class="fehler-fix">Redirect-URIs vollständig und exakt registrieren; zusätzlich PKCE verwenden.</p>
+</div>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: Zu viele Scopes</div>
+  <p>Eine App für Geburtstagserinnerungen fordert Lese- und Schreibzugriff auf E-Mails, Kontakte und Dateien an. Benutzer brechen ab – oder geben einer womöglich kompromittierten App viel zu viele Rechte.</p>
+          <p class="fehler-fix">Nur die Scopes anfordern, die für die aktuelle Funktion nötig sind; weitere bei Bedarf später nachfordern.</p>
+</div>
+      </section>
+
+      <section class="section section-aufgaben">
+        <h2>Aufgaben</h2>
+        <div class="aufgaben-list">
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 1</span>
+    <span class="aufgabe-title">Rollen zuordnen</span>
+  </div>
+  <p>Eine Lern-App möchte deine Termine aus einem Online-Kalender lesen, um Lernzeiten vorzuschlagen. Nenne für dieses Szenario Resource Owner, Client, Authorization Server, Resource Server und einen passenden Scope.</p>
+</div>
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 2</span>
+    <span class="aufgabe-title">OIDC-Login einbauen</span>
+  </div>
+  <p>Registriere eine Anwendung bei Google (oder starte lokal einen Keycloak-Server mit Docker) und baue den Login dieses Abschnitts in dein FlugBoard ein. Beobachte im Tab <strong>Network</strong> die Weiterleitungen: Wo erscheinen <code>state</code>, <code>code_challenge</code> und <code>code</code>? Wo ist der <code>code_verifier</code> zu sehen – und warum nirgends im Browser?</p>
+</div>
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 3</span>
+    <span class="aufgabe-title">Discovery-Dokument lesen</span>
+  </div>
+  <p>Rufe im Browser das öffentliche Discovery-Dokument eines großen Anbieters auf (z.&nbsp;B. <code>https://accounts.google.com/.well-known/openid-configuration</code>). Suche den Authorization-Endpunkt, den Token-Endpunkt, die JWKS-URL und die unterstützten Scopes.</p>
+</div>
+          <div class="aufgabe aufgabe-bonus">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Bonus</span>
+    <span class="aufgabe-title">SSO für die Schule</span>
+  </div>
+  <p>Deine Schule möchte für alle Dienste (Lernplattform, Mail, Bibliothek, Mensa-Bestellung) SSO einführen. Verfasse eine kurze Empfehlung mit Vor- und Nachteilen und nenne zwei Maßnahmen, die das Risiko eines übernommenen SSO-Kontos verringern.</p>
+</div>
+        </div>
+      </section>
+
+      <section class="section section-quiz">
+        <h2>Wissenskontrolle</h2>
+        <div class="quiz" id="quiz-1">
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 1</span> Welches Problem löst OAuth 2.0 in erster Linie?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Die Verschlüsselung der Verbindung zwischen Browser und Server</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-1"> <span>Eine Anwendung erhält eingeschränkten Zugriff auf Ressourcen, ohne das Passwort des Benutzers zu kennen</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Das sichere Speichern von Passwörtern in der Datenbank</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Den Schutz vor SQL Injection</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> OAuth 2.0 ist ein Standard für delegierte Autorisierung: Statt des Passworts bekommt die App ein Access Token mit begrenzten Scopes und begrenzter Laufzeit. Verschlüsselung der Verbindung ist Aufgabe von TLS.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 2</span> Wofür dient <strong>PKCE</strong> im Authorization Code Flow?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Es verschlüsselt das Access Token</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-2"> <span>Es verhindert, dass ein abgefangener Authorization Code von jemand anderem gegen Tokens eingetauscht werden kann</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Es ersetzt die Anmeldung des Benutzers</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Es legt fest, welche Scopes die App bekommt</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Nur die App kennt den ursprünglichen <code>code_verifier</code>; am Anfang wurde nur dessen Hash übertragen. Ein gestohlener Code ist ohne den Verifier wertlos. PKCE wird heute für alle Clients empfohlen.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 3</span> Was unterscheidet OpenID Connect von OAuth 2.0?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>OpenID Connect ist ein Nachfolger, der OAuth 2.0 vollständig ersetzt</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-3"> <span>OpenID Connect ergänzt OAuth 2.0 um Authentifizierung, insbesondere durch das ID Token</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>OpenID Connect funktioniert ohne Authorization Server</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>OpenID Connect verwendet keine Tokens</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> OIDC ist eine Schicht über OAuth 2.0. Es verwendet dieselben Flows, fügt aber den Scope <code>openid</code>, das ID Token, Standard-Claims, den UserInfo-Endpunkt und Discovery hinzu.</div>
+  </div>
+  <div class="quiz-frage" data-multi="1">
+    <p class="quiz-q"><span class="quiz-num">Frage 4</span> Welche Aussagen über das <strong>ID Token</strong> sind richtig?</p>
+    <p class="quiz-hint">Mehrere Antworten sind richtig.</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-4"> <span>Es ist immer ein JWT</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-4"> <span>Sein Empfänger (<code>aud</code>) ist die Client-App</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-4"> <span>Es sollte bei jeder API-Anfrage im Authorization-Header mitgeschickt werden</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-4"> <span>Die App muss es validieren, bevor sie den Benutzer als angemeldet betrachtet</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Das ID Token ist ein JWT für die Client-App und belegt die Anmeldung. Für API-Aufrufe ist das Access Token gedacht. Wie jedes JWT muss das ID Token geprüft werden (Signatur, <code>iss</code>, <code>aud</code>, <code>exp</code>, <code>nonce</code>).</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 5</span> Welcher Grant Type passt für einen nächtlichen Backend-Job, der ohne Benutzer eine API aufruft?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span>Authorization Code + PKCE</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span>Implicit</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-5"> <span>Client Credentials</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span>Resource Owner Password Credentials</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Bei Maschine-zu-Maschine-Kommunikation authentifiziert sich der Dienst selbst mit seinen Client-Zugangsdaten. Authorization Code braucht einen Menschen, Implicit und Password Grant sind veraltet.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 6</span> Was ist ein Nachteil von Single Sign-On?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span>Benutzer müssen sich mehr Passwörter merken</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span>MFA lässt sich nicht zentral durchsetzen</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-6"> <span>Ein übernommenes Konto beim Identity Provider öffnet alle angebundenen Anwendungen</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span>Jede Anwendung muss Passwort-Hashes speichern</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Bei SSO ist das IdP-Konto der Generalschlüssel. Deshalb sollte es besonders gut geschützt werden, z.&nbsp;B. mit MFA oder Passkeys. Die anderen Aussagen beschreiben gerade die Vorteile von SSO ins Gegenteil verkehrt.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 7</span> Im Callback wird ein Konto über <code>claims.iss</code> und <code>claims.sub</code> gesucht, nicht über die E-Mail-Adresse. Warum?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-7"> <span>Weil OIDC keine E-Mail-Adressen liefert</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-7"> <span>Weil <code>iss</code> + <code>sub</code> einen Benutzer dauerhaft eindeutig identifizieren, E-Mail-Adressen sich aber ändern oder unbestätigt sein können</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-7"> <span>Weil E-Mail-Adressen im ID Token verschlüsselt sind</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-7"> <span>Weil Drizzle keine Suche nach Texten erlaubt</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> <code>sub</code> ist die stabile Kennung des Benutzers beim jeweiligen Aussteller. Eine E-Mail-Adresse kann gewechselt oder bei manchen Anbietern ohne Bestätigung eingetragen werden. Wer Konten über die E-Mail verknüpft, riskiert Kontoübernahmen.</div>
+  </div>
+  <div class="quiz-summary"><span class="quiz-score"></span><button type="button" class="quiz-reset">Zur&uuml;cksetzen</button></div>
+</div>
+      </section>
+
+    </div>
+
+    <nav class="lesson-nav">
+      <a class="nav-btn" href="2.1-login-sessions.html">&larr; Lektion 2.1: Login &amp; Sessions in Next.js</a>
+      <span class="nav-center-info">Lektion 2.2</span>
+      <a class="nav-btn primary" href="2.3-mfa-passkeys.html">Lektion 2.3: MFA, TOTP &amp; Passkeys &rarr;</a>
+    </nav>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>
+    const ham = document.getElementById('hamburger');
+    const sb = document.getElementById('sidebar');
+    const ov = document.getElementById('overlay');
+    ham.addEventListener('click', () => { sb.classList.toggle('open'); ov.classList.toggle('visible'); });
+    ov.addEventListener('click', () => { sb.classList.remove('open'); ov.classList.remove('visible'); });
+    const cur = window.location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.nav-link').forEach(l => {
+      if (l.getAttribute('href') === cur) l.classList.add('active');
+    });
+    const themeBtn = document.getElementById('theme-toggle');
+    const applyTheme = (t) => {
+      document.documentElement.setAttribute('data-theme', t);
+      if (themeBtn) themeBtn.innerHTML = t === 'dark' ? '&#9728;' : '&#9790;';
+    };
+    applyTheme(localStorage.getItem('kurs-theme') || 'dark');
+    setTimeout(() => document.documentElement.classList.add('theme-transitions'), 50);
+    if (themeBtn) themeBtn.addEventListener('click', () => {
+      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('kurs-theme', next);
+      applyTheme(next);
+    });
+    hljs.highlightAll();
+  </script>
+  <script>
+    document.querySelectorAll('.quiz').forEach((quiz) => {
+      const fragen = [...quiz.querySelectorAll('.quiz-frage')];
+      const score = quiz.querySelector('.quiz-score');
+      const update = () => {
+        const done = fragen.filter((f) => f.dataset.state).length;
+        const ok = fragen.filter((f) => f.dataset.state === 'ok').length;
+        score.textContent = done === 0
+          ? fragen.length + ' Fragen – wähle eine Antwort und prüfe sie.'
+          : ok + ' von ' + fragen.length + ' richtig'
+            + (done < fragen.length ? ' (' + done + ' von ' + fragen.length + ' bearbeitet)' : '');
+      };
+      fragen.forEach((f) => {
+        const inputs = [...f.querySelectorAll('input')];
+        const check = f.querySelector('.quiz-check');
+        const reveal = f.querySelector('.quiz-reveal');
+        const fb = f.querySelector('.quiz-feedback');
+        const exp = f.querySelector('.quiz-erklaerung');
+        inputs.forEach((i) => i.addEventListener('change', () => {
+          check.disabled = !inputs.some((x) => x.checked);
+        }));
+        const finish = (graded) => {
+          let allOk = true;
+          f.querySelectorAll('.quiz-opt').forEach((li) => {
+            const input = li.querySelector('input');
+            const corr = li.dataset.correct === '1';
+            if (corr !== input.checked) allOk = false;
+            if (corr) li.classList.add('opt-correct');
+            else if (input.checked) li.classList.add('opt-wrong');
+            input.disabled = true;
+          });
+          f.dataset.state = !graded ? 'shown' : (allOk ? 'ok' : 'wrong');
+          fb.className = 'quiz-feedback fb-' + f.dataset.state;
+          fb.textContent = !graded ? 'Lösung angezeigt.'
+            : (allOk ? '✔ Richtig!' : '✘ Leider nicht ganz – die richtige Lösung ist markiert.');
+          fb.hidden = false;
+          exp.hidden = false;
+          check.disabled = true;
+          reveal.disabled = true;
+          update();
+        };
+        check.addEventListener('click', () => finish(true));
+        reveal.addEventListener('click', () => finish(false));
+      });
+      quiz.querySelector('.quiz-reset').addEventListener('click', () => {
+        fragen.forEach((f) => {
+          delete f.dataset.state;
+          f.querySelectorAll('.quiz-opt').forEach((li) => li.classList.remove('opt-correct', 'opt-wrong'));
+          f.querySelectorAll('input').forEach((i) => { i.checked = false; i.disabled = false; });
+          f.querySelector('.quiz-check').disabled = true;
+          f.querySelector('.quiz-reveal').disabled = false;
+          f.querySelector('.quiz-feedback').hidden = true;
+          f.querySelector('.quiz-erklaerung').hidden = true;
+        });
+        update();
+      });
+      update();
+    });
+  </script>
+</body>
+
+</html>

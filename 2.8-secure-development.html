@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<!-- GENERIERT von kurse/_build (web_security) – nicht direkt bearbeiten!
+     Quelle: kurse/_build/web_security/lessons/, bauen: python3 _build/build.py web_security -->
+<html lang="de">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2.8 &ndash; Secure Development &amp; OWASP | Web Security &amp; Identity Kurs</title>
+  <script>(function () { var t = localStorage.getItem('kurs-theme') || 'dark'; document.documentElement.setAttribute('data-theme', t); })();</script>
+  <link rel="stylesheet" href="assets/kurs.css">
+  <link rel="stylesheet" id="hljs-theme"
+    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+
+<body>
+
+  <button class="hamburger" id="hamburger" aria-label="Navigation &ouml;ffnen">&#9776;</button>
+  <div class="sidebar-overlay" id="overlay"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <a href="index.html">
+        <span class="brand-icon">&#128274;</span>
+        <div>
+          <div class="brand-name">Web Security</div>
+          <div class="brand-sub">Web- und Mobile Computing</div>
+        </div>
+      </a>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Dark/Light Mode"
+        title="Theme wechseln">&#9728;</button>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group">
+        <div class="nav-group-label sec-label">Teil 1 &mdash; Konzepte</div>
+        <a class="nav-link" href="1.1-grundlagen.html"><span class="ln">1.1</span>Grundlagen der Web-Security</a>
+        <a class="nav-link" href="1.2-passwoerter.html"><span class="ln">1.2</span>Passwörter sicher speichern</a>
+        <a class="nav-link" href="1.3-sessions-cookies.html"><span class="ln">1.3</span>Sessions &amp; Cookies</a>
+        <a class="nav-link" href="1.4-jwt-tokens.html"><span class="ln">1.4</span>JWT &amp; Token-basierte Authentifizierung</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label secdev-label">Teil 2 &mdash; Umsetzung mit Next.js</div>
+        <a class="nav-link" href="2.1-login-sessions.html"><span class="ln">2.1</span>Login &amp; Sessions in Next.js</a>
+        <a class="nav-link" href="2.2-oauth-oidc-sso.html"><span class="ln">2.2</span>OAuth 2.0, OpenID Connect &amp; SSO</a>
+        <a class="nav-link" href="2.3-mfa-passkeys.html"><span class="ln">2.3</span>MFA, TOTP &amp; Passkeys</a>
+        <a class="nav-link" href="2.4-access-control.html"><span class="ln">2.4</span>Authorization &amp; Access Control</a>
+        <a class="nav-link" href="2.5-injection.html"><span class="ln">2.5</span>Injection &amp; unsichere Eingaben</a>
+        <a class="nav-link" href="2.6-xss-csrf.html"><span class="ln">2.6</span>XSS, CSRF &amp; Clickjacking</a>
+        <a class="nav-link" href="2.7-api-security.html"><span class="ln">2.7</span>API Security</a>
+        <a class="nav-link" href="2.8-secure-development.html"><span class="ln">2.8</span>Secure Development &amp; OWASP</a>
+      </div>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <header class="lesson-header">
+      <p class="lesson-eyebrow">Lektion 2.8 &mdash; Teil 2: Umsetzung mit Next.js</p>
+      <h1>Secure Development &amp; OWASP</h1>
+      <div class="lesson-tags">
+        <span class="tag tag-secdev">Secure Dev</span>
+        <span class="tag tag-time">ca. 45 min</span>
+        <span class="tag tag-level">Vertiefung</span>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <section class="section section-lernziele">
+        <h2>Lernziele</h2>
+        <ul class="lernziele-list">
+          <li>Security-Aktivitäten den Phasen der Softwareentwicklung zuordnen</li>
+          <li>Secrets sicher verwalten und Konfiguration mit Environment Variables vom Code trennen</li>
+          <li>Risiken durch Abhängigkeiten (Dependency Security, Supply Chain) erkennen und verringern</li>
+          <li>Die wichtigsten Security Headers und typische Fehlkonfigurationen kennen</li>
+          <li>Festlegen, welche Ereignisse protokolliert werden – und welche Daten nicht ins Log gehören</li>
+          <li>OWASP ASVS, Cheat Sheets und Arten von Security Testing einordnen</li>
+                  <li>Umgebungsvariablen validieren, Security Headers setzen, Sicherheitsereignisse protokollieren und Security-Checks automatisieren</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>1 — Security im Entwicklungsprozess</h2>
+        <p>Sicherheit entsteht nicht durch einen einzelnen Test vor dem Release, sondern in jeder Phase (<strong>Secure Software Development Lifecycle</strong>, „Shift Left“ – Fehler möglichst früh finden):</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Phase</th><th>Security-Aktivität</th></tr></thead>
+            <tbody>
+              <tr><td>Anforderungen</td><td>Schutzbedarf der Daten klären, Rollen und Berechtigungen festlegen, Sicherheitsanforderungen aus dem ASVS auswählen</td></tr>
+              <tr><td>Entwurf</td><td><strong>Threat Modeling</strong>: Was kann schiefgehen? Wo sind Vertrauensgrenzen? (Lektion 1.1)</td></tr>
+              <tr><td>Implementierung</td><td>bewährte Bibliotheken, OWASP Cheat Sheets, Code-Reviews mit Security-Blick</td></tr>
+              <tr><td>Test</td><td>automatisierte Security-Tests in der CI-Pipeline, Abhängigkeiten prüfen, ggf. Penetrationstest</td></tr>
+              <tr><td>Betrieb</td><td>Security Logging und Monitoring, Updates einspielen, auf Vorfälle reagieren</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout callout-info">
+  <div class="callout-icon">&#8505;</div>
+  <div class="callout-body">
+    <div class="callout-title">Threat Modeling mit STRIDE</div>
+    <p>Ein einfacher Einstieg ist, für jede Komponente sechs Fragen zu stellen: Kann jemand eine fremde
+          Identität vortäuschen (<strong>S</strong>poofing)? Daten manipulieren (<strong>T</strong>ampering)?
+          Eine Aktion abstreiten (<strong>R</strong>epudiation)? Daten einsehen (<strong>I</strong>nformation
+          Disclosure)? Das System lahmlegen (<strong>D</strong>enial of Service)? Mehr Rechte erlangen
+          (<strong>E</strong>levation of Privilege)?</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>2 — Secrets Management und Environment Variables</h2>
+        <p>
+          <strong>Secrets</strong> sind alle Geheimnisse, die eine Anwendung zum Betrieb braucht:
+          Datenbank-Passwörter, API Keys, JWT-Signaturschlüssel, OAuth-Client-Secrets, der Pepper aus
+          Lektion 1.2. Gelangen sie in falsche Hände, sind alle anderen Schutzmaßnahmen umgangen.
+        </p>
+        <h3>Konfiguration vom Code trennen</h3>
+        <p>
+          Secrets gehören <strong>nie in den Quellcode</strong> und nie ins Git-Repository – auch nicht in ein
+          privates, denn Repositories werden geteilt, geforkt und kopiert, und die Git-Historie vergisst nichts.
+          Stattdessen liest die Anwendung Konfiguration aus <strong>Environment Variables</strong>
+          (Umgebungsvariablen), die je nach Umgebung (Entwicklung, Test, Produktion) unterschiedlich gesetzt
+          werden.
+        </p>
+        <ul>
+          <li>Lokal stehen die Werte oft in einer <code>.env</code>-Datei – diese wird in <code>.gitignore</code> eingetragen. Ins Repository kommt nur eine <code>.env.example</code> mit Platzhaltern.</li>
+          <li>In Produktion verwaltet ein <strong>Secrets Manager</strong> die Werte (z.&nbsp;B. HashiCorp Vault, AWS Secrets Manager, Azure Key Vault, die Secret-Verwaltung von GitHub Actions oder Kubernetes): zentral, verschlüsselt, mit Zugriffsrechten und Protokoll.</li>
+          <li>Secrets regelmäßig und nach jedem Personalwechsel <strong>rotieren</strong>; pro Umgebung verschiedene Secrets.</li>
+          <li><strong>Secret Scanning</strong> (z.&nbsp;B. Push Protection von GitHub) erkennt versehentlich eingecheckte Schlüssel.</li>
+        </ul>
+        <div class="callout callout-error">
+  <div class="callout-icon">&#10007;</div>
+  <div class="callout-body">
+    <div class="callout-title">Secret geleakt – was tun?</div>
+    <p>Ein Secret, das einmal in einem Repository, Chat oder Log stand, gilt als kompromittiert.
+          Es zu löschen reicht nicht. Sofort <strong>widerrufen und durch ein neues ersetzen</strong>, danach prüfen,
+          ob es missbraucht wurde.</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>3 — Dependency Security und Supply Chain</h2>
+        <p>
+          Eine typische Web-Anwendung besteht zum größten Teil aus fremdem Code: Ein neues Frontend-Projekt
+          bringt schnell hunderte npm-Pakete mit. Jede Abhängigkeit kann Schwachstellen enthalten – oder
+          absichtlich bösartig sein. Die OWASP Top 10 führt dafür die Kategorie <strong>Software Supply Chain
+          Failures</strong>.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Risiko</th><th>Beispiel</th></tr></thead>
+            <tbody>
+              <tr><td>Bekannte Schwachstelle</td><td>Eine Logging-Bibliothek erlaubt das Ausführen von Code über präparierte Log-Einträge (Log4Shell, 2021).</td></tr>
+              <tr><td>Kompromittiertes Paket</td><td>Das Konto eines Maintainers wird übernommen, eine neue Version enthält Schadcode, der Secrets stiehlt.</td></tr>
+              <tr><td>Typosquatting</td><td>Ein Paket mit fast gleichem Namen wie ein bekanntes (Tippfehler) enthält Schadcode.</td></tr>
+              <tr><td>Verwaistes Paket</td><td>Eine Bibliothek wird nicht mehr gepflegt, Lücken werden nie geschlossen.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <ul>
+          <li><strong>Software Composition Analysis</strong>: Abhängigkeiten automatisch auf bekannte Schwachstellen prüfen (z.&nbsp;B. <code>npm audit</code>, Dependabot, OWASP Dependency-Check) – am besten in der CI-Pipeline.</li>
+          <li><strong>Lockfiles</strong> (<code>package-lock.json</code>) einchecken, damit überall exakt dieselben Versionen installiert werden.</li>
+          <li><strong>Regelmäßig aktualisieren</strong> – kleine, häufige Updates sind einfacher als ein großer Sprung.</li>
+          <li>Vor dem Hinzufügen prüfen: Wird das Paket gepflegt? Wie viele Abhängigkeiten zieht es nach? Braucht man es wirklich?</li>
+          <li>Eine <strong>SBOM</strong> (Software Bill of Materials) listet alle enthaltenen Komponenten – damit weiß man bei einer neuen Lücke sofort, ob man betroffen ist.</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>4 — Security Headers und Security Misconfiguration</h2>
+        <p>Mit wenigen HTTP-Response-Headern aktiviert der Server Schutzfunktionen im Browser:</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Header</th><th>Wirkung</th></tr></thead>
+            <tbody>
+              <tr><td><code>Content-Security-Policy</code></td><td>erlaubte Quellen für Skripte, Styles, Frames … (Lektion 2.6)</td></tr>
+              <tr><td><code>Strict-Transport-Security</code> (HSTS)</td><td>Browser verwendet für diese Domain künftig nur noch HTTPS</td></tr>
+              <tr><td><code>X-Content-Type-Options: nosniff</code></td><td>Browser rät den Dateityp nicht selbst (verhindert, dass ein „Bild“ als Skript ausgeführt wird)</td></tr>
+              <tr><td><code>Referrer-Policy</code></td><td>begrenzt, welche URL-Informationen beim Klick auf externe Links weitergegeben werden</td></tr>
+              <tr><td><code>Permissions-Policy</code></td><td>schaltet nicht benötigte Browser-Funktionen ab (Kamera, Mikrofon, Standort)</td></tr>
+              <tr><td><code>frame-ancestors</code> / <code>X-Frame-Options</code></td><td>Schutz vor Clickjacking (Lektion 2.6)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Platz 2 der OWASP Top 10 ist <strong>Security Misconfiguration</strong> – die Anwendung wäre sicher, ist aber falsch eingestellt:</p>
+        <ul>
+          <li>Standard-Passwörter (z.&nbsp;B. für Admin-Oberflächen oder Datenbanken) nicht geändert</li>
+          <li>Debug-Modus, Beispielseiten oder Verzeichnislisten in Produktion</li>
+          <li>Header, die Server-Software und Version verraten</li>
+          <li>öffentlich lesbare Cloud-Speicher-Buckets</li>
+          <li>unnötige Dienste, Ports und Funktionen aktiv</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>5 — Security Logging und Monitoring</h2>
+        <p>
+          Ohne Protokolle bleibt ein Angriff oft monatelang unbemerkt. <strong>Security Logging</strong>
+          zeichnet sicherheitsrelevante Ereignisse auf, <strong>Monitoring</strong> wertet sie aus und alarmiert
+          bei Auffälligkeiten.
+        </p>
+        <div class="two-col">
+          <div>
+            <h3 class="mt-0">Protokollieren ✔</h3>
+            <ul>
+              <li>erfolgreiche und fehlgeschlagene Logins</li>
+              <li>Änderungen an Passwort, E-Mail, MFA</li>
+              <li>verweigerte Zugriffe (403)</li>
+              <li>Admin-Aktionen, Rechteänderungen</li>
+              <li>abgelehnte Eingaben, ungültige Tokens</li>
+              <li>jeweils mit Zeit, Benutzer, IP-Adresse, Correlation ID</li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="mt-0">Nicht ins Log ✘</h3>
+            <ul>
+              <li>Passwörter (auch falsche – oft nur vertippt)</li>
+              <li>Session-IDs, Access und Refresh Tokens, API Keys</li>
+              <li>Kreditkarten- und Gesundheitsdaten</li>
+              <li>unnötige personenbezogene Daten (DSGVO: Datenminimierung)</li>
+            </ul>
+          </div>
+        </div>
+        <ul>
+          <li>Logs <strong>zentral</strong> und vor Veränderung geschützt speichern – ein Angreifer soll seine Spuren nicht löschen können.</li>
+          <li><strong>Alarme</strong> für Muster wie viele fehlgeschlagene Logins, Login aus ungewöhnlichem Land, Massendownload.</li>
+          <li><strong>Log Injection</strong> vermeiden: Benutzereingaben im Log kodieren, damit niemand über Zeilenumbrüche gefälschte Einträge erzeugt.</li>
+          <li>Aufbewahrungsdauer festlegen und einhalten.</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>6 — OWASP ASVS, Cheat Sheets und Security Testing</h2>
+        <h3>OWASP-Ressourcen für Entwickler</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Ressource</th><th>Einsatz</th></tr></thead>
+            <tbody>
+              <tr><td><strong>OWASP Top 10</strong></td><td>Überblick und Bewusstsein für die häufigsten Risiken (Lektion 1.1)</td></tr>
+              <tr><td><strong>OWASP Cheat Sheet Series</strong></td><td>kurze, konkrete Anleitungen: Password Storage, Session Management, XSS Prevention, …</td></tr>
+              <tr><td><strong>OWASP ASVS</strong> (Application Security Verification Standard)</td><td>detaillierter Katalog überprüfbarer Anforderungen in drei Stufen: Level 1 (Grundschutz für jede Anwendung), Level 2 (Anwendungen mit sensiblen Daten – empfohlener Standard), Level 3 (kritische Anwendungen). Nutzbar als Anforderungsliste und als Prüfliste.</td></tr>
+              <tr><td><strong>OWASP API Security Top 10</strong></td><td>Risiken speziell für APIs (Lektion 2.7)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>Arten von Security Testing</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Methode</th><th>Vorgehen</th><th>Findet z.&nbsp;B.</th></tr></thead>
+            <tbody>
+              <tr><td><strong>SAST</strong> (Static Application Security Testing)</td><td>analysiert den Quellcode, ohne ihn auszuführen</td><td>zusammengesetzte SQL-Strings, unsichere Funktionen</td></tr>
+              <tr><td><strong>DAST</strong> (Dynamic Application Security Testing)</td><td>greift die laufende Anwendung von außen an (z.&nbsp;B. OWASP ZAP)</td><td>fehlende Header, XSS, offene Endpunkte</td></tr>
+              <tr><td><strong>SCA</strong> (Software Composition Analysis)</td><td>prüft Abhängigkeiten (Abschnitt 3)</td><td>bekannte Schwachstellen in Bibliotheken</td></tr>
+              <tr><td>Secret Scanning</td><td>durchsucht Repository und Historie</td><td>eingecheckte Schlüssel</td></tr>
+              <tr><td><strong>Penetrationstest</strong></td><td>Fachleute greifen die Anwendung gezielt und mit Erlaubnis an</td><td>Logikfehler, Access-Control-Lücken, verkettete Schwachstellen</td></tr>
+              <tr><td>Security-Unit-Tests</td><td>eigene Tests für Sicherheitsregeln</td><td>„Benutzer A darf Bestellung von B nicht sehen“ (Lektion 2.4)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout callout-warning">
+  <div class="callout-icon">&#9888;</div>
+  <div class="callout-body">
+    <div class="callout-title">Nur mit Erlaubnis</div>
+    <p>Sicherheitstests an fremden Systemen ohne ausdrückliche Erlaubnis sind in Österreich und
+          Deutschland strafbar (z.&nbsp;B. widerrechtlicher Zugriff auf ein Computersystem). Üben darfst du
+          an eigenen Anwendungen und in dafür gemachten Umgebungen (OWASP Juice Shop, PortSwigger Web
+          Security Academy). Wer zufällig eine Lücke findet, meldet sie verantwortungsvoll an den Betreiber
+          (<strong>Responsible Disclosure</strong>) – viele Websites nennen dafür in der Datei
+          <code>/.well-known/security.txt</code> einen Kontakt.</p>
+  </div>
+</div>
+      </section>
+
+            <section class="section">
+        <h2>7 — Umsetzung im FlugBoard</h2>
+        <h3>Umgebungsvariablen prüfen</h3>
+        <p>
+          Wie man Secrets in <code>.env.local</code> ablegt, kennst du aus dem React-Kurs (Lektion 3.6). Jetzt
+          sorgen wir dafür, dass ein fehlendes oder zu schwaches Secret sofort auffällt – statt erst, wenn der
+          erste Benutzer TOTP einrichtet:
+        </p>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/env.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import { z } from 'zod';
+
+// Alle Umgebungsvariablen an einer Stelle prüfen: Fehlt ein Secret oder ist
+// es zu schwach, startet die Anwendung gar nicht erst (Fail Early).
+const envSchema = z.object({
+  NODE_ENV: z.enum(['development', 'test', 'production']),
+  APP_URL: z.url(),
+  DATABASE_PATH: z.string().min(1),
+  ENCRYPTION_KEY: z.string().regex(/^[0-9a-f]{64}$/, '32 Byte als Hex, z. B. openssl rand -hex 32'),
+  OIDC_ISSUER: z.url(),
+  OIDC_CLIENT_ID: z.string().min(1),
+  OIDC_CLIENT_SECRET: z.string().min(16),
+  OIDC_JWKS_URL: z.url(),
+});
+
+export const env = envSchema.parse(process.env);</code></pre>
+</div>
+        <p>Statt <code>process.env.ENCRYPTION_KEY</code> verwenden die übrigen Module dann <code>env.ENCRYPTION_KEY</code> – typisiert und garantiert vorhanden.</p>
+
+        <h3>Security Headers</h3>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">next.config.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import type { NextConfig } from 'next';
+
+const securityHeaders = [
+  // künftig nur noch HTTPS (1 Jahr, inkl. Subdomains)
+  { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+  { key: 'X-Frame-Options', value: 'DENY' }, // für ältere Browser zusätzlich zu frame-ancestors
+];
+
+const nextConfig: NextConfig = {
+  poweredByHeader: false, // kein "X-Powered-By: Next.js"
+  async headers() {
+    return [{ source: '/:path*', headers: securityHeaders }];
+  },
+};
+
+export default nextConfig;</code></pre>
+</div>
+        <p>Die Content Security Policy fehlt hier bewusst: Sie braucht einen Nonce pro Anfrage und steht deshalb in der Middleware (Lektion 2.6).</p>
+
+        <h3>Security Logging</h3>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/lib/security-log.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">type SecurityEvent =
+  | 'login.success'
+  | 'login.failure'
+  | 'login.rate_limited'
+  | 'mfa.enabled'
+  | 'access.denied'
+  | 'admin.role_changed';
+
+// Diese Felder landen nie im Log – auch nicht versehentlich
+const REDACTED_KEYS = ['password', 'token', 'secret', 'session', 'authorization', 'apiKey'];
+
+/** Schreibt ein Sicherheitsereignis als eine JSON-Zeile (für zentrale Auswertung). */
+export function logSecurityEvent(
+  event: SecurityEvent,
+  details: Record&lt;string, string | number | boolean | undefined&gt;,
+): void {
+  const safe = Object.fromEntries(
+    Object.entries(details).map(([key, value]) =&gt; [
+      key,
+      REDACTED_KEYS.some((r) =&gt; key.toLowerCase().includes(r.toLowerCase())) ? '[REDACTED]' : value,
+    ]),
+  );
+  // JSON.stringify kodiert Zeilenumbrüche – keine gefälschten Log-Zeilen (Log Injection)
+  console.log(JSON.stringify({ time: new Date().toISOString(), type: 'security', event, ...safe }));
+}</code></pre>
+</div>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">Verwendung, z. B. in login</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">if (!user || !valid) {
+  logSecurityEvent('login.failure', { email, ip });
+  redirect('/login?error=1');
+}</code></pre>
+</div>
+        <p>Ein Prozessmanager wie systemd (React-Kurs, Lektion 3.6) sammelt diese Zeilen; von dort können sie an ein zentrales Log-System weitergeleitet werden.</p>
+
+        <h3>Abhängigkeiten und Secrets automatisch prüfen</h3>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">.github/dependabot.yml</span>
+    <span class="code-lang">Text</span>
+  </div>
+  <pre><code class="language-plaintext"># Dependabot prüft wöchentlich auf neue Versionen und Sicherheitsupdates
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5</code></pre>
+</div>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">.github/workflows/security.yml</span>
+    <span class="code-lang">Text</span>
+  </div>
+  <pre><code class="language-plaintext">name: Security
+on: [push, pull_request]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # ganze Historie für den Secret-Scan
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci # exakt die Versionen aus package-lock.json
+      # bricht bei bekannten Schwachstellen ab Stufe "high" ab
+      - run: npm audit --audit-level=high
+      - run: npx tsc --noEmit
+      # sucht nach versehentlich eingecheckten Schlüsseln
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}</code></pre>
+</div>
+
+        <h3>Security-Tests mit Playwright</h3>
+        <p>Berechtigungsregeln sind Anforderungen – und Anforderungen testet man. Mit Playwright (React-Kurs, Lektion 3.5) prüfen wir die Regeln aus Lektion 2.4 automatisch:</p>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">tests/e2e/access-control.spec.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import { expect, test } from '@playwright/test';
+
+// Security-Test: Benutzer B darf die Buchung von Benutzer A nicht sehen (IDOR)
+// Voraussetzung: Testdaten mit zwei Benutzern und einer Buchung von A
+const BOOKING_OF_A = '3f1c2a9e-0000-4000-8000-000000000001';
+
+async function loginAs(page: import('@playwright/test').Page, email: string) {
+  await page.goto('/login');
+  await page.getByLabel('E-Mail').fill(email);
+  await page.getByLabel('Passwort').fill('ein-langes-testpasswort-123');
+  await page.getByRole('button', { name: 'Anmelden' }).click();
+  await expect(page).toHaveURL('/konto');
+}
+
+test('Besitzerin sieht ihre eigene Buchung', async ({ page }) =&gt; {
+  await loginAs(page, 'anna@example.com');
+  const res = await page.request.get(`/api/bookings/${BOOKING_OF_A}`);
+  expect(res.status()).toBe(200);
+});
+
+test('fremde Buchung liefert 404', async ({ page }) =&gt; {
+  await loginAs(page, 'ben@example.com');
+  const res = await page.request.get(`/api/bookings/${BOOKING_OF_A}`);
+  expect(res.status()).toBe(404);
+});
+
+test('ohne Login gibt es 401', async ({ request }) =&gt; {
+  const res = await request.get(`/api/bookings/${BOOKING_OF_A}`);
+  expect(res.status()).toBe(401);
+});
+
+test('Passagier kommt nicht in die Benutzerverwaltung', async ({ page }) =&gt; {
+  await loginAs(page, 'ben@example.com');
+  const res = await page.goto('/admin/users');
+  expect(res?.status()).toBe(404);
+});</code></pre>
+</div>
+        <div class="callout callout-tip">
+  <div class="callout-icon">&#128161;</div>
+  <div class="callout-body">
+    <div class="callout-title">Negative Tests</div>
+    <p>Die meisten Tests prüfen, dass etwas <em>funktioniert</em>. Security-Tests prüfen, dass etwas
+          <em>nicht</em> funktioniert: fremde Daten, fehlende Rechte, ungültige Eingaben. Jede gefundene Lücke
+          bekommt einen Test, damit sie nie wieder auftaucht.</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>8 — Zusammenfassung des Kurses</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Thema</th><th>Die wichtigste Regel</th></tr></thead>
+            <tbody>
+              <tr><td>Grundlagen (1.1)</td><td>Never trust the client – alles am Server prüfen.</td></tr>
+              <tr><td>Passwörter (1.2)</td><td>Argon2id oder bcrypt, nie Klartext, nie selbst erfunden.</td></tr>
+              <tr><td>Sessions (1.3)</td><td>Zufällige ID, Cookie mit Secure, HttpOnly, SameSite; neue ID nach Login.</td></tr>
+              <tr><td>JWT (1.4)</td><td>Immer vollständig validieren; kurzlebig; keine Geheimnisse im Payload.</td></tr>
+              <tr><td>Login in Next.js (2.1)</td><td>Zufälliges Session-Token, nur gehasht gespeichert; jede Eingabe am Server mit Zod prüfen.</td></tr>
+              <tr><td>OAuth/OIDC (2.2)</td><td>Authorization Code + PKCE; für Login das ID Token prüfen.</td></tr>
+              <tr><td>MFA (2.3)</td><td>MFA anbieten, Passkeys bevorzugen, Recovery absichern.</td></tr>
+              <tr><td>Access Control (2.4)</td><td>Deny by Default, bei jedem Objektzugriff Eigentum prüfen.</td></tr>
+              <tr><td>Injection (2.5)</td><td>Prepared Statements, Allowlists, sichere Uploads.</td></tr>
+              <tr><td>XSS/CSRF (2.6)</td><td>Output Encoding + CSP; SameSite + CSRF-Token.</td></tr>
+              <tr><td>APIs (2.7)</td><td>Validieren, begrenzen, CORS mit Allowlist, keine internen Details in Fehlern.</td></tr>
+              <tr><td>Secure Development (2.8)</td><td>Keine Secrets im Code, Abhängigkeiten pflegen, protokollieren, testen.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section section-fehler">
+        <h2>Häufige Fehler</h2>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: .env-Datei eingecheckt</div>
+  <p>Die <code>.env</code> mit dem Datenbank-Passwort wurde mit dem ersten Commit hochgeladen und erst später in <code>.gitignore</code> eingetragen. In der Git-Historie ist sie weiterhin abrufbar.</p>
+          <p class="fehler-fix"><code>.gitignore</code> vor dem ersten Commit anlegen; ein bereits veröffentlichtes Secret sofort widerrufen und ersetzen.</p>
+</div>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: Warnungen von npm audit ignoriert</div>
+  <p>Seit Monaten meldet die Pipeline kritische Schwachstellen in Abhängigkeiten, niemand reagiert, weil „ja alles funktioniert“.</p>
+          <p class="fehler-fix">Schwachstellen-Meldungen als Teil der Arbeit behandeln: kritische Funde zeitnah beheben, Abhängigkeiten regelmäßig aktualisieren.</p>
+</div>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: Kein Log bei fehlgeschlagenen Logins</div>
+  <p>Ein Angreifer probiert wochenlang Passwörter durch. Weil nur erfolgreiche Logins protokolliert werden, fällt es niemandem auf.</p>
+          <p class="fehler-fix">Sicherheitsrelevante Ereignisse – gerade Fehlschläge – protokollieren und bei Auffälligkeiten alarmieren.</p>
+</div>
+      </section>
+
+      <section class="section section-aufgaben">
+        <h2>Aufgaben</h2>
+        <div class="aufgaben-list">
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 1</span>
+    <span class="aufgabe-title">Security Headers prüfen</span>
+  </div>
+  <p>Prüfe drei Websites mit einem öffentlichen Header-Scanner (z.&nbsp;B. <strong>securityheaders.com</strong>) oder in den DevTools. Welche Header aus Abschnitt 4 fehlen? Welche Bewertung erhalten die Seiten?</p>
+</div>
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 2</span>
+    <span class="aufgabe-title">Secrets-Inventur</span>
+  </div>
+  <p>Liste alle Secrets des FlugBoards aus Teil 2 auf (Datenbankpfad, <code>ENCRYPTION_KEY</code>, OIDC-Werte, …). Erstelle eine <code>.env.example</code> mit Platzhaltern und Beschreibungen, binde <code>src/env.ts</code> ein und prüfe, dass die App mit einem zu kurzen <code>ENCRYPTION_KEY</code> nicht startet.</p>
+</div>
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 3</span>
+    <span class="aufgabe-title">Logging einbauen</span>
+  </div>
+  <p>Rufe <code>logSecurityEvent</code> an allen sicherheitsrelevanten Stellen des FlugBoards auf (Login erfolgreich/fehlgeschlagen/begrenzt, MFA aktiviert, 403/404 bei fremden Buchungen, Rollenänderung). Prüfe die Ausgabe: Steht irgendwo ein Passwort, Token oder Cookie?</p>
+</div>
+          <div class="aufgabe aufgabe-bonus">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Bonus</span>
+    <span class="aufgabe-title">ASVS kennenlernen</span>
+  </div>
+  <p>Öffne den <strong>OWASP ASVS</strong> und suche das Kapitel zur Authentifizierung. Wähle fünf Level-1-Anforderungen aus, ordne sie den Lektionen dieses Kurses zu und erkläre jeweils in einem Satz, wie man ihre Einhaltung prüfen könnte.</p>
+</div>
+        </div>
+      </section>
+
+      <section class="section section-quiz">
+        <h2>Wissenskontrolle</h2>
+        <div class="quiz" id="quiz-1">
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 1</span> Ein API Key wurde versehentlich in ein öffentliches Repository gepusht. Was ist der wichtigste erste Schritt?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Den Commit löschen und das Repository auf privat stellen</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-1"> <span>Den Key sofort widerrufen und durch einen neuen ersetzen</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Den Key in einer neuen Datei mit anderem Namen speichern</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Abwarten, ob der Key missbraucht wird</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Ein veröffentlichtes Secret ist kompromittiert – automatisierte Scanner finden solche Keys oft innerhalb von Minuten. Löschen oder Verstecken hilft nicht, weil Kopien und die Git-Historie existieren. Nur Widerrufen macht den Key wertlos.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 2</span> Welche Methode analysiert den Quellcode, ohne die Anwendung auszuführen?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-2"> <span>SAST</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>DAST</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Penetrationstest</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Rate Limiting</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Static Application Security Testing untersucht den Code. DAST und Penetrationstests greifen die laufende Anwendung an; Rate Limiting ist eine Schutzmaßnahme, keine Testmethode.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 3</span> Was gehört <strong>nicht</strong> in ein Security-Log?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>Zeitpunkt und Benutzer eines fehlgeschlagenen Logins</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-3"> <span>Das beim fehlgeschlagenen Login eingegebene Passwort</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>Eine verweigerte Admin-Aktion</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>Die Correlation ID einer Anfrage</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Falsch eingegebene Passwörter sind oft nur vertippte richtige Passwörter – oder das Passwort eines anderen Dienstes. Passwörter, Tokens und Session-IDs gehören nie ins Log.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 4</span> Wozu dient der Header <code>Strict-Transport-Security</code> (HSTS)?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Er verhindert Clickjacking</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-4"> <span>Der Browser verwendet für die Domain künftig nur noch HTTPS</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Er legt erlaubte Skriptquellen fest</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Er begrenzt die Anzahl der Anfragen</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Mit HSTS merkt sich der Browser, die Seite nur verschlüsselt aufzurufen – auch wenn jemand <code>http://</code> eintippt. Clickjacking verhindert <code>frame-ancestors</code>, Skriptquellen regelt die CSP.</div>
+  </div>
+  <div class="quiz-frage" data-multi="1">
+    <p class="quiz-q"><span class="quiz-num">Frage 5</span> Welche Aussagen zum <strong>OWASP ASVS</strong> sind richtig?</p>
+    <p class="quiz-hint">Mehrere Antworten sind richtig.</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-5"> <span>Er ist ein Katalog überprüfbarer Sicherheitsanforderungen</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-5"> <span>Er unterscheidet drei Stufen je nach Schutzbedarf der Anwendung</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-5"> <span>Er ist ein automatischer Schwachstellen-Scanner</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-5"> <span>Er ersetzt die OWASP Top 10 und ist nur für Banken gedacht</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Der ASVS beschreibt detaillierte Anforderungen in drei Levels und dient als Anforderungs- und Prüfliste. Er ist kein Werkzeug, ersetzt die Top 10 nicht (die ist ein Überblick) und ist für alle Webanwendungen gedacht.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 6</span> Warum steht die Content Security Policy des FlugBoards in der Middleware und nicht in <code>next.config.ts</code> bei den anderen Headern?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span>Weil <code>next.config.ts</code> keine Header setzen kann</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-6"> <span>Weil der Nonce für jede Antwort neu erzeugt werden muss</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span>Weil die CSP nur für API-Routen gilt</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span>Weil die Middleware schneller ist</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Die Header in <code>next.config.ts</code> sind fest. Ein Nonce ist nur sicher, wenn er pro Antwort zufällig ist – deshalb wird die CSP in der Middleware für jede Anfrage neu gebaut.</div>
+  </div>
+  <div class="quiz-summary"><span class="quiz-score"></span><button type="button" class="quiz-reset">Zur&uuml;cksetzen</button></div>
+</div>
+      </section>
+
+    </div>
+
+    <nav class="lesson-nav">
+      <a class="nav-btn" href="2.7-api-security.html">&larr; Lektion 2.7: API Security</a>
+      <span class="nav-center-info">Lektion 2.8</span>
+      <a class="nav-btn primary" href="index.html">Kurs&uuml;bersicht &rarr;</a>
+    </nav>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>
+    const ham = document.getElementById('hamburger');
+    const sb = document.getElementById('sidebar');
+    const ov = document.getElementById('overlay');
+    ham.addEventListener('click', () => { sb.classList.toggle('open'); ov.classList.toggle('visible'); });
+    ov.addEventListener('click', () => { sb.classList.remove('open'); ov.classList.remove('visible'); });
+    const cur = window.location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.nav-link').forEach(l => {
+      if (l.getAttribute('href') === cur) l.classList.add('active');
+    });
+    const themeBtn = document.getElementById('theme-toggle');
+    const applyTheme = (t) => {
+      document.documentElement.setAttribute('data-theme', t);
+      if (themeBtn) themeBtn.innerHTML = t === 'dark' ? '&#9728;' : '&#9790;';
+    };
+    applyTheme(localStorage.getItem('kurs-theme') || 'dark');
+    setTimeout(() => document.documentElement.classList.add('theme-transitions'), 50);
+    if (themeBtn) themeBtn.addEventListener('click', () => {
+      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('kurs-theme', next);
+      applyTheme(next);
+    });
+    hljs.highlightAll();
+  </script>
+  <script>
+    document.querySelectorAll('.quiz').forEach((quiz) => {
+      const fragen = [...quiz.querySelectorAll('.quiz-frage')];
+      const score = quiz.querySelector('.quiz-score');
+      const update = () => {
+        const done = fragen.filter((f) => f.dataset.state).length;
+        const ok = fragen.filter((f) => f.dataset.state === 'ok').length;
+        score.textContent = done === 0
+          ? fragen.length + ' Fragen – wähle eine Antwort und prüfe sie.'
+          : ok + ' von ' + fragen.length + ' richtig'
+            + (done < fragen.length ? ' (' + done + ' von ' + fragen.length + ' bearbeitet)' : '');
+      };
+      fragen.forEach((f) => {
+        const inputs = [...f.querySelectorAll('input')];
+        const check = f.querySelector('.quiz-check');
+        const reveal = f.querySelector('.quiz-reveal');
+        const fb = f.querySelector('.quiz-feedback');
+        const exp = f.querySelector('.quiz-erklaerung');
+        inputs.forEach((i) => i.addEventListener('change', () => {
+          check.disabled = !inputs.some((x) => x.checked);
+        }));
+        const finish = (graded) => {
+          let allOk = true;
+          f.querySelectorAll('.quiz-opt').forEach((li) => {
+            const input = li.querySelector('input');
+            const corr = li.dataset.correct === '1';
+            if (corr !== input.checked) allOk = false;
+            if (corr) li.classList.add('opt-correct');
+            else if (input.checked) li.classList.add('opt-wrong');
+            input.disabled = true;
+          });
+          f.dataset.state = !graded ? 'shown' : (allOk ? 'ok' : 'wrong');
+          fb.className = 'quiz-feedback fb-' + f.dataset.state;
+          fb.textContent = !graded ? 'Lösung angezeigt.'
+            : (allOk ? '✔ Richtig!' : '✘ Leider nicht ganz – die richtige Lösung ist markiert.');
+          fb.hidden = false;
+          exp.hidden = false;
+          check.disabled = true;
+          reveal.disabled = true;
+          update();
+        };
+        check.addEventListener('click', () => finish(true));
+        reveal.addEventListener('click', () => finish(false));
+      });
+      quiz.querySelector('.quiz-reset').addEventListener('click', () => {
+        fragen.forEach((f) => {
+          delete f.dataset.state;
+          f.querySelectorAll('.quiz-opt').forEach((li) => li.classList.remove('opt-correct', 'opt-wrong'));
+          f.querySelectorAll('input').forEach((i) => { i.checked = false; i.disabled = false; });
+          f.querySelector('.quiz-check').disabled = true;
+          f.querySelector('.quiz-reveal').disabled = false;
+          f.querySelector('.quiz-feedback').hidden = true;
+          f.querySelector('.quiz-erklaerung').hidden = true;
+        });
+        update();
+      });
+      update();
+    });
+  </script>
+</body>
+
+</html>

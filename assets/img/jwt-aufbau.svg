@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 300" width="720" height="300" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14">
+  <rect width="720" height="300" fill="#fff"/>
+  <text x="360" y="34" text-anchor="middle" font-family="Consolas, monospace" font-size="15"><tspan fill="#d6336c">eyJhbGciOi…</tspan><tspan fill="#333">.</tspan><tspan fill="#7048e8">eyJzdWIiOiI0Mi…</tspan><tspan fill="#333">.</tspan><tspan fill="#0c8599">SflKxwRJSMeK…</tspan></text>
+  <text x="360" y="58" text-anchor="middle" font-size="12" fill="#555">Ein JWT besteht aus drei Base64URL-kodierten Teilen, getrennt durch Punkte</text>
+  <rect x="20" y="80" width="210" height="190" rx="8" fill="#fff0f6" stroke="#d6336c"/>
+  <text x="125" y="106" text-anchor="middle" font-weight="700" fill="#d6336c">Header</text>
+  <text x="40" y="136" font-size="13">Algorithmus und Typ</text>
+  <text x="40" y="166" font-family="Consolas, monospace" font-size="13">alg: RS256</text>
+  <text x="40" y="188" font-family="Consolas, monospace" font-size="13">typ: JWT</text>
+  <rect x="255" y="80" width="210" height="190" rx="8" fill="#f3f0ff" stroke="#7048e8"/>
+  <text x="360" y="106" text-anchor="middle" font-weight="700" fill="#7048e8">Payload (Claims)</text>
+  <text x="275" y="136" font-size="13">Aussagen über den Benutzer</text>
+  <text x="275" y="166" font-family="Consolas, monospace" font-size="13">sub: 42</text>
+  <text x="275" y="188" font-family="Consolas, monospace" font-size="13">role: customer</text>
+  <text x="275" y="210" font-family="Consolas, monospace" font-size="13">iss: auth.shop.example</text>
+  <text x="275" y="232" font-family="Consolas, monospace" font-size="13">exp: 1795430400</text>
+  <text x="275" y="258" font-size="11" fill="#c92a2a">nur kodiert – NICHT verschlüsselt!</text>
+  <rect x="490" y="80" width="210" height="190" rx="8" fill="#e3fafc" stroke="#0c8599"/>
+  <text x="595" y="106" text-anchor="middle" font-weight="700" fill="#0c8599">Signatur</text>
+  <text x="510" y="136" font-size="13">berechnet aus Header +</text>
+  <text x="510" y="154" font-size="13">Payload mit dem Schlüssel</text>
+  <text x="510" y="172" font-size="13">des Ausstellers</text>
+  <text x="510" y="206" font-size="13">→ jede Änderung am Token</text>
+  <text x="510" y="224" font-size="13">macht die Signatur</text>
+  <text x="510" y="242" font-size="13">ungültig</text>
+</svg>

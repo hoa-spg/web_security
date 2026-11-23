@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<!-- GENERIERT von kurse/_build (web_security) – nicht direkt bearbeiten!
+     Quelle: kurse/_build/web_security/lessons/, bauen: python3 _build/build.py web_security -->
+<html lang="de">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>1.3 &ndash; Sessions &amp; Cookies | Web Security &amp; Identity Kurs</title>
+  <script>(function () { var t = localStorage.getItem('kurs-theme') || 'dark'; document.documentElement.setAttribute('data-theme', t); })();</script>
+  <link rel="stylesheet" href="assets/kurs.css">
+  <link rel="stylesheet" id="hljs-theme"
+    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+
+<body>
+
+  <button class="hamburger" id="hamburger" aria-label="Navigation &ouml;ffnen">&#9776;</button>
+  <div class="sidebar-overlay" id="overlay"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <a href="index.html">
+        <span class="brand-icon">&#128274;</span>
+        <div>
+          <div class="brand-name">Web Security</div>
+          <div class="brand-sub">Web- und Mobile Computing</div>
+        </div>
+      </a>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Dark/Light Mode"
+        title="Theme wechseln">&#9728;</button>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group">
+        <div class="nav-group-label sec-label">Teil 1 &mdash; Konzepte</div>
+        <a class="nav-link" href="1.1-grundlagen.html"><span class="ln">1.1</span>Grundlagen der Web-Security</a>
+        <a class="nav-link" href="1.2-passwoerter.html"><span class="ln">1.2</span>Passwörter sicher speichern</a>
+        <a class="nav-link" href="1.3-sessions-cookies.html"><span class="ln">1.3</span>Sessions &amp; Cookies</a>
+        <a class="nav-link" href="1.4-jwt-tokens.html"><span class="ln">1.4</span>JWT &amp; Token-basierte Authentifizierung</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label secdev-label">Teil 2 &mdash; Umsetzung mit Next.js</div>
+        <a class="nav-link" href="2.1-login-sessions.html"><span class="ln">2.1</span>Login &amp; Sessions in Next.js</a>
+        <a class="nav-link" href="2.2-oauth-oidc-sso.html"><span class="ln">2.2</span>OAuth 2.0, OpenID Connect &amp; SSO</a>
+        <a class="nav-link" href="2.3-mfa-passkeys.html"><span class="ln">2.3</span>MFA, TOTP &amp; Passkeys</a>
+        <a class="nav-link" href="2.4-access-control.html"><span class="ln">2.4</span>Authorization &amp; Access Control</a>
+        <a class="nav-link" href="2.5-injection.html"><span class="ln">2.5</span>Injection &amp; unsichere Eingaben</a>
+        <a class="nav-link" href="2.6-xss-csrf.html"><span class="ln">2.6</span>XSS, CSRF &amp; Clickjacking</a>
+        <a class="nav-link" href="2.7-api-security.html"><span class="ln">2.7</span>API Security</a>
+        <a class="nav-link" href="2.8-secure-development.html"><span class="ln">2.8</span>Secure Development &amp; OWASP</a>
+      </div>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <header class="lesson-header">
+      <p class="lesson-eyebrow">Lektion 1.3 &mdash; Teil 1: Konzepte</p>
+      <h1>Sessions &amp; Cookies</h1>
+      <div class="lesson-tags">
+        <span class="tag tag-sec">Sessions</span>
+        <span class="tag tag-time">ca. 60 min</span>
+        <span class="tag tag-level">Grundlagen</span>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <section class="section section-lernziele">
+        <h2>Lernziele</h2>
+        <ul class="lernziele-list">
+          <li>Erklären, warum HTTP Sessions braucht und wie eine serverseitige Session funktioniert</li>
+          <li>Anforderungen an eine sichere Session-ID nennen</li>
+          <li>Die Cookie-Attribute <code>Secure</code>, <code>HttpOnly</code> und <code>SameSite</code> erklären und richtig einsetzen</li>
+          <li>Origin und Site unterscheiden</li>
+          <li>Session Hijacking und Session Fixation beschreiben und Gegenmaßnahmen nennen</li>
+          <li>Timeouts und Logout sicher gestalten</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>1 — HTTP ist zustandslos</h2>
+        <p>
+          HTTP ist ein <strong>zustandsloses</strong> Protokoll: Jede Anfrage steht für sich, der Server
+          erkennt nicht von selbst, dass zwei Anfragen vom selben Browser kommen. Nach dem Login (Lektion 1.2)
+          müsste der Benutzer also bei jeder Anfrage erneut sein Passwort mitschicken – unpraktisch und
+          unsicher.
+        </p>
+        <p>
+          Die Lösung ist eine <strong>Session</strong> (Sitzung): Der Server merkt sich nach dem Login, dass
+          ein bestimmter Benutzer angemeldet ist, und gibt dem Browser eine Kennung mit, die dieser bei
+          jeder weiteren Anfrage zurückschickt. Dafür gibt es zwei grundlegende Ansätze:
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Ansatz</th><th>Wo liegt der Zustand?</th><th>Lektion</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Serverseitige Session</strong></td><td>am Server; der Browser hat nur eine zufällige Session-ID</td><td>diese Lektion</td></tr>
+              <tr><td><strong>Token</strong> (z.&nbsp;B. JWT)</td><td>im Token selbst, das der Server signiert hat</td><td>1.4</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>2 — Serverseitige Sessions und die Session-ID</h2>
+        <figure class="figure">
+  <div class="figure-img"><img src="assets/img/session-ablauf.svg" alt="Login mit serverseitiger Session: Der Browser speichert nur die Session-ID im Cookie" loading="lazy" style="max-width:680px"></div>
+  <figcaption>Login mit serverseitiger Session: Der Browser speichert nur die Session-ID im Cookie</figcaption>
+</figure>
+        <ol>
+          <li>Der Benutzer meldet sich an.</li>
+          <li>Der Server erzeugt eine <strong>Session-ID</strong> und legt im <strong>Session-Store</strong> (Arbeitsspeicher, Datenbank oder Redis) einen Eintrag an: „Diese ID gehört zu Benutzer 42“.</li>
+          <li>Die Session-ID wird dem Browser als <strong>Cookie</strong> geschickt.</li>
+          <li>Der Browser schickt das Cookie bei jeder Anfrage an diese Website automatisch mit.</li>
+          <li>Der Server schlägt die ID im Session-Store nach und weiß, wer anfragt.</li>
+        </ol>
+        <p>Wer die Session-ID kennt, ist für den Server dieser Benutzer. Die ID ist daher so wertvoll wie das Passwort und muss folgende Anforderungen erfüllen:</p>
+        <ul>
+          <li><strong>Zufällig und nicht erratbar:</strong> erzeugt mit einem kryptografisch sicheren Zufallsgenerator, mindestens 128 Bit Zufall</li>
+          <li><strong>Bedeutungslos:</strong> keine Benutzer-ID, kein Zeitstempel, keine fortlaufende Nummer</li>
+          <li><strong>Nur im Cookie</strong>, nie in der URL – URLs landen in Browser-Verlauf, Server-Logs und im <code>Referer</code>-Header beim Klick auf externe Links</li>
+        </ul>
+        <div class="callout callout-tip">
+  <div class="callout-icon">&#128161;</div>
+  <div class="callout-body">
+    <div class="callout-title">Framework verwenden</div>
+    <p>Fast jedes Web-Framework bringt ein ausgereiftes Session-Management mit. Verwende es, statt
+          Session-IDs selbst zu erzeugen und zu verwalten – und prüfe nur die Konfiguration (Abschnitt 3).</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>3 — Cookies absichern: Secure, HttpOnly, SameSite</h2>
+        <p>
+          Ein Cookie wird vom Server mit dem Response-Header <code>Set-Cookie</code> gesetzt. Neben Name und
+          Wert hat es <strong>Attribute</strong>, die steuern, wann der Browser es mitschickt und wer es lesen
+          darf. Die Grundlagen kennst du aus dem JavaScript-Kurs (Lektion 3.4); für Session-Cookies sind
+          folgende Attribute Pflicht:
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Attribut</th><th>Wirkung</th><th>Schützt gegen</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Secure</strong></td><td>Cookie wird nur über HTTPS gesendet</td><td>Mitlesen im Netzwerk (z.&nbsp;B. öffentliches WLAN)</td></tr>
+              <tr><td><strong>HttpOnly</strong></td><td>JavaScript im Browser kann das Cookie nicht lesen (<code>document.cookie</code> enthält es nicht)</td><td>Diebstahl durch eingeschleustes JavaScript (XSS, Lektion 2.6)</td></tr>
+              <tr><td><strong>SameSite</strong></td><td>steuert, ob das Cookie bei Anfragen mitgeschickt wird, die von einer <em>fremden Website</em> ausgelöst werden</td><td>Cross-Site-Angriffe wie CSRF (Lektion 2.6)</td></tr>
+              <tr><td>Max-Age / Expires</td><td>Ablaufzeit; ohne Angabe ist es ein Session-Cookie, das beim Schließen des Browsers verschwindet</td><td>zu lange gültige Logins</td></tr>
+              <tr><td>Domain / Path</td><td>für welche Hosts und Pfade das Cookie gilt</td><td>ungewolltes Teilen mit Subdomains</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Origin und Site</h3>
+        <p>Um <code>SameSite</code> zu verstehen, braucht man zwei Begriffe, die auch später (CORS, CSRF) wichtig sind:</p>
+        <ul>
+          <li><strong>Origin</strong> = Schema + Host + Port. <code>https://shop.example</code> und <code>https://api.shop.example</code> sind verschiedene Origins.</li>
+          <li><strong>Site</strong> = Schema + registrierbare Domain. <code>https://shop.example</code> und <code>https://api.shop.example</code> sind dieselbe Site, <code>https://evil.example</code> ist eine andere.</li>
+        </ul>
+        <p>Eine Anfrage ist <strong>cross-site</strong>, wenn eine Seite von Site A eine Anfrage an Site B auslöst – z.&nbsp;B. ein Formular auf <code>evil.example</code>, das an <code>shop.example</code> abgeschickt wird.</p>
+
+        <h3>Die drei Werte von SameSite</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Wert</th><th>Cookie wird bei Cross-Site-Anfragen …</th><th>Einsatz</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Strict</strong></td><td>nie mitgeschickt – auch nicht beim Klick auf einen Link von einer fremden Seite</td><td>sehr sensible Anwendungen (Online-Banking); Benutzer wirkt nach dem Klick auf einen externen Link „ausgeloggt“</td></tr>
+              <tr><td><strong>Lax</strong></td><td>nur bei normaler Navigation (Link-Klick, GET) mitgeschickt, nicht bei Formular-POSTs, Bildern oder fetch-Anfragen</td><td>guter Standard für Session-Cookies; Default in modernen Browsern</td></tr>
+              <tr><td><strong>None</strong></td><td>immer mitgeschickt; erfordert zusätzlich <code>Secure</code></td><td>nur wenn wirklich nötig, z.&nbsp;B. eingebettete Widgets auf fremden Seiten</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout callout-info">
+  <div class="callout-icon">&#8505;</div>
+  <div class="callout-body">
+    <div class="callout-title">Cookie-Präfix __Host-</div>
+    <p>Beginnt der Cookie-Name mit <code>__Host-</code>, akzeptiert der Browser das Cookie nur, wenn es
+          <code>Secure</code> hat, über HTTPS gesetzt wurde, keine <code>Domain</code> angibt und
+          <code>Path=/</code> hat. So kann keine Subdomain das Session-Cookie überschreiben.</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>4 — Session Hijacking</h2>
+        <p>
+          Beim <strong>Session Hijacking</strong> stiehlt ein Angreifer eine gültige Session-ID und übernimmt
+          damit die Sitzung – ganz ohne Passwort und auch an MFA vorbei, denn die Anmeldung ist ja schon
+          erfolgt.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Wie kommt der Angreifer an die ID?</th><th>Gegenmaßnahme</th></tr></thead>
+            <tbody>
+              <tr><td>Mitlesen einer unverschlüsselten Verbindung</td><td>überall HTTPS, Cookie mit <code>Secure</code></td></tr>
+              <tr><td>Auslesen per eingeschleustem JavaScript (XSS)</td><td><code>HttpOnly</code>, XSS verhindern (2.6)</td></tr>
+              <tr><td>ID steht in der URL und landet in Logs oder im Referer</td><td>Session-ID nur im Cookie</td></tr>
+              <tr><td>Erraten einer schwachen ID</td><td>lange, kryptografisch zufällige IDs</td></tr>
+              <tr><td>Schadsoftware auf dem Gerät des Opfers</td><td>kurze Laufzeiten, erneute Anmeldung bei kritischen Aktionen</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>5 — Session Fixation</h2>
+        <p>Bei der <strong>Session Fixation</strong> geht der Angreifer umgekehrt vor: Er stiehlt keine ID, sondern <em>schiebt</em> dem Opfer eine ihm bekannte ID unter.</p>
+        <ol>
+          <li>Der Angreifer besorgt sich eine gültige, noch nicht angemeldete Session-ID.</li>
+          <li>Er bringt das Opfer dazu, diese ID zu verwenden (z.&nbsp;B. über einen präparierten Link, wenn die Anwendung IDs aus der URL akzeptiert).</li>
+          <li>Das Opfer meldet sich an. Die Anwendung behält die bisherige ID und verknüpft sie mit dem Konto des Opfers.</li>
+          <li>Der Angreifer kennt die ID und ist damit ebenfalls angemeldet.</li>
+        </ol>
+        <div class="callout callout-tip">
+  <div class="callout-icon">&#128161;</div>
+  <div class="callout-body">
+    <div class="callout-title">Gegenmaßnahme</div>
+    <p>Nach jedem Login (und bei jeder Änderung der Berechtigungsstufe) eine <strong>neue Session-ID
+          erzeugen</strong> und die alte ungültig machen. Zusätzlich keine Session-IDs aus der URL akzeptieren.</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>6 — Timeouts und Logout</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Maßnahme</th><th>Bedeutung</th><th>Typische Werte</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Idle Timeout</strong></td><td>Session endet nach einer Zeit ohne Aktivität</td><td>15–30 min (Banking: kürzer)</td></tr>
+              <tr><td><strong>Absolute Timeout</strong></td><td>Session endet spätestens nach einer festen Zeit, auch bei Aktivität</td><td>einige Stunden bis ein Tag</td></tr>
+              <tr><td><strong>Logout</strong></td><td>Session wird <strong>am Server</strong> gelöscht, nicht nur das Cookie im Browser</td><td>–</td></tr>
+              <tr><td><strong>Re-Authentication</strong></td><td>erneute Passworteingabe vor kritischen Aktionen (Passwort/E-Mail ändern, Zahlung)</td><td>–</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          Gute Anwendungen zeigen außerdem eine Liste der aktiven Sitzungen („Angemeldet auf: Chrome/Windows,
+          iPhone“) und erlauben, einzelne oder alle zu beenden. Nach einer Passwortänderung sollten alle
+          anderen Sessions automatisch beendet werden.
+        </p>
+      </section>
+
+      <section class="section section-fehler">
+        <h2>Häufige Fehler</h2>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: Logout löscht nur das Cookie</div>
+  <p>Beim Logout wird nur das Cookie im Browser entfernt. Wer die Session-ID vorher kopiert hat, kann sie weiter verwenden, weil sie am Server noch gültig ist.</p>
+          <p class="fehler-fix">Beim Logout die Session im Session-Store löschen bzw. ungültig machen.</p>
+</div>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: Session-Cookie ohne HttpOnly und Secure</div>
+  <p>Das Session-Cookie kann von JavaScript gelesen werden und wird auch über HTTP verschickt. Eine einzige XSS-Lücke oder ein offenes WLAN genügt für die Übernahme der Sitzung.</p>
+          <p class="fehler-fix">Session-Cookies immer mit <code>Secure</code>, <code>HttpOnly</code> und <code>SameSite=Lax</code> (oder <code>Strict</code>) setzen.</p>
+</div>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: Gleiche Session-ID vor und nach dem Login</div>
+  <p>Die Session wird schon beim ersten Besuch angelegt und nach dem Login einfach weiterverwendet – die Anwendung ist anfällig für Session Fixation.</p>
+          <p class="fehler-fix">Nach erfolgreichem Login immer eine neue Session-ID vergeben.</p>
+</div>
+      </section>
+
+      <section class="section section-aufgaben">
+        <h2>Aufgaben</h2>
+        <div class="aufgaben-list">
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 1</span>
+    <span class="aufgabe-title">Cookies untersuchen</span>
+  </div>
+  <p>Melde dich bei einem Dienst an, den du regelmäßig nutzt. Öffne die DevTools (Tab <strong>Application</strong> bzw. <strong>Speicher</strong> → Cookies). Welches Cookie ist vermutlich das Session-Cookie? Welche der Attribute <code>Secure</code>, <code>HttpOnly</code>, <code>SameSite</code> sind gesetzt? Welchen Präfix hat der Name?</p>
+</div>
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 2</span>
+    <span class="aufgabe-title">Same Site oder Cross Site?</span>
+  </div>
+  <p>Entscheide jeweils, ob die Anfrage same-site oder cross-site ist und ob ein Cookie mit <code>SameSite=Lax</code> mitgeschickt wird:</p>
+            <ol>
+              <li>Ein Formular auf <code>https://www.shop.example</code> schickt einen POST an <code>https://api.shop.example</code>.</li>
+              <li>Ein Link in einer E-Mail öffnet <code>https://shop.example/orders</code>.</li>
+              <li>Ein verstecktes Formular auf <code>https://evil.example</code> schickt einen POST an <code>https://shop.example/transfer</code>.</li>
+            </ol>
+</div>
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 3</span>
+    <span class="aufgabe-title">Timeout-Konzept</span>
+  </div>
+  <p>Lege für (a) eine Online-Banking-Anwendung, (b) ein Schulportal und (c) einen Webmail-Dienst sinnvolle Werte für Idle Timeout und Absolute Timeout fest. Begründe die Unterschiede.</p>
+</div>
+          <div class="aufgabe aufgabe-bonus">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Bonus</span>
+    <span class="aufgabe-title">Session Fixation erklären</span>
+  </div>
+  <p>Erkläre einer Mitschülerin den Unterschied zwischen Session Hijacking und Session Fixation mithilfe einer Analogie aus dem Alltag (z.&nbsp;B. Garderobenmarke, Hotelschlüssel).</p>
+</div>
+        </div>
+      </section>
+
+      <section class="section section-quiz">
+        <h2>Wissenskontrolle</h2>
+        <div class="quiz" id="quiz-1">
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 1</span> Was speichert der Browser bei einer <strong>serverseitigen Session</strong>?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Benutzername und Passwort</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Alle Benutzerdaten im JSON-Format</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-1"> <span>Nur eine zufällige Session-ID im Cookie</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Den Passwort-Hash</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Bei serverseitigen Sessions liegen alle Daten im Session-Store am Server. Der Browser erhält nur eine bedeutungslose, zufällige ID, mit der der Server den Eintrag wiederfindet.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 2</span> Welches Cookie-Attribut verhindert, dass eingeschleustes JavaScript das Session-Cookie auslesen kann?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Secure</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-2"> <span>HttpOnly</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>SameSite=Lax</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Max-Age</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> <code>HttpOnly</code> blendet das Cookie für JavaScript aus. <code>Secure</code> erzwingt HTTPS, <code>SameSite</code> regelt Cross-Site-Anfragen und <code>Max-Age</code> die Lebensdauer.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 3</span> Ein Session-Cookie hat <code>SameSite=Lax</code>. In welchem Fall wird es mitgeschickt?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-3"> <span>Der Benutzer klickt auf einer fremden Website auf einen Link zur Anwendung</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>Eine fremde Website schickt automatisch ein Formular per POST an die Anwendung</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>Eine fremde Website lädt per fetch Daten von der Anwendung</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>Eine fremde Website bindet ein Bild der Anwendung ein</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Bei <code>Lax</code> wird das Cookie bei Cross-Site-Anfragen nur für normale Top-Level-Navigation mit GET mitgeschickt – also beim Klick auf einen Link. POST-Formulare, fetch und eingebettete Ressourcen von fremden Sites bekommen es nicht. Genau das schützt vor vielen CSRF-Angriffen.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 4</span> Welche Maßnahme schützt vor <strong>Session Fixation</strong>?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Das Passwort mit Argon2 hashen</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-4"> <span>Nach dem Login eine neue Session-ID erzeugen</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Das Cookie mit Max-Age versehen</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Die Session-ID in der URL übertragen</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Bei Session Fixation kennt der Angreifer die ID schon vor dem Login. Wird nach dem Login eine neue ID vergeben, ist die untergeschobene wertlos. Session-IDs in der URL machen Fixation erst möglich.</div>
+  </div>
+  <div class="quiz-frage" data-multi="1">
+    <p class="quiz-q"><span class="quiz-num">Frage 5</span> Welche Aussagen über Origin und Site sind richtig?</p>
+    <p class="quiz-hint">Mehrere Antworten sind richtig.</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-5"> <span><code>https://shop.example</code> und <code>https://api.shop.example</code> sind verschiedene Origins</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-5"> <span><code>https://shop.example</code> und <code>https://api.shop.example</code> gehören zur selben Site</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-5"> <span><code>https://shop.example</code> und <code>https://evil.example</code> gehören zur selben Site</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-5"> <span>Origin und Site bedeuten dasselbe</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Eine Origin besteht aus Schema, Host und Port – ein anderer Host ergibt eine andere Origin. Eine Site umfasst Schema und registrierbare Domain, Subdomains gehören dazu. <code>evil.example</code> ist eine völlig andere Domain und damit eine andere Site.</div>
+  </div>
+  <div class="quiz-summary"><span class="quiz-score"></span><button type="button" class="quiz-reset">Zur&uuml;cksetzen</button></div>
+</div>
+      </section>
+
+    </div>
+
+    <nav class="lesson-nav">
+      <a class="nav-btn" href="1.2-passwoerter.html">&larr; Lektion 1.2: Passwörter sicher speichern</a>
+      <span class="nav-center-info">Lektion 1.3</span>
+      <a class="nav-btn primary" href="1.4-jwt-tokens.html">Lektion 1.4: JWT &amp; Token-basierte Authentifizierung &rarr;</a>
+    </nav>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>
+    const ham = document.getElementById('hamburger');
+    const sb = document.getElementById('sidebar');
+    const ov = document.getElementById('overlay');
+    ham.addEventListener('click', () => { sb.classList.toggle('open'); ov.classList.toggle('visible'); });
+    ov.addEventListener('click', () => { sb.classList.remove('open'); ov.classList.remove('visible'); });
+    const cur = window.location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.nav-link').forEach(l => {
+      if (l.getAttribute('href') === cur) l.classList.add('active');
+    });
+    const themeBtn = document.getElementById('theme-toggle');
+    const applyTheme = (t) => {
+      document.documentElement.setAttribute('data-theme', t);
+      if (themeBtn) themeBtn.innerHTML = t === 'dark' ? '&#9728;' : '&#9790;';
+    };
+    applyTheme(localStorage.getItem('kurs-theme') || 'dark');
+    setTimeout(() => document.documentElement.classList.add('theme-transitions'), 50);
+    if (themeBtn) themeBtn.addEventListener('click', () => {
+      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('kurs-theme', next);
+      applyTheme(next);
+    });
+    hljs.highlightAll();
+  </script>
+  <script>
+    document.querySelectorAll('.quiz').forEach((quiz) => {
+      const fragen = [...quiz.querySelectorAll('.quiz-frage')];
+      const score = quiz.querySelector('.quiz-score');
+      const update = () => {
+        const done = fragen.filter((f) => f.dataset.state).length;
+        const ok = fragen.filter((f) => f.dataset.state === 'ok').length;
+        score.textContent = done === 0
+          ? fragen.length + ' Fragen – wähle eine Antwort und prüfe sie.'
+          : ok + ' von ' + fragen.length + ' richtig'
+            + (done < fragen.length ? ' (' + done + ' von ' + fragen.length + ' bearbeitet)' : '');
+      };
+      fragen.forEach((f) => {
+        const inputs = [...f.querySelectorAll('input')];
+        const check = f.querySelector('.quiz-check');
+        const reveal = f.querySelector('.quiz-reveal');
+        const fb = f.querySelector('.quiz-feedback');
+        const exp = f.querySelector('.quiz-erklaerung');
+        inputs.forEach((i) => i.addEventListener('change', () => {
+          check.disabled = !inputs.some((x) => x.checked);
+        }));
+        const finish = (graded) => {
+          let allOk = true;
+          f.querySelectorAll('.quiz-opt').forEach((li) => {
+            const input = li.querySelector('input');
+            const corr = li.dataset.correct === '1';
+            if (corr !== input.checked) allOk = false;
+            if (corr) li.classList.add('opt-correct');
+            else if (input.checked) li.classList.add('opt-wrong');
+            input.disabled = true;
+          });
+          f.dataset.state = !graded ? 'shown' : (allOk ? 'ok' : 'wrong');
+          fb.className = 'quiz-feedback fb-' + f.dataset.state;
+          fb.textContent = !graded ? 'Lösung angezeigt.'
+            : (allOk ? '✔ Richtig!' : '✘ Leider nicht ganz – die richtige Lösung ist markiert.');
+          fb.hidden = false;
+          exp.hidden = false;
+          check.disabled = true;
+          reveal.disabled = true;
+          update();
+        };
+        check.addEventListener('click', () => finish(true));
+        reveal.addEventListener('click', () => finish(false));
+      });
+      quiz.querySelector('.quiz-reset').addEventListener('click', () => {
+        fragen.forEach((f) => {
+          delete f.dataset.state;
+          f.querySelectorAll('.quiz-opt').forEach((li) => li.classList.remove('opt-correct', 'opt-wrong'));
+          f.querySelectorAll('input').forEach((i) => { i.checked = false; i.disabled = false; });
+          f.querySelector('.quiz-check').disabled = true;
+          f.querySelector('.quiz-reveal').disabled = false;
+          f.querySelector('.quiz-feedback').hidden = true;
+          f.querySelector('.quiz-erklaerung').hidden = true;
+        });
+        update();
+      });
+      update();
+    });
+  </script>
+</body>
+
+</html>

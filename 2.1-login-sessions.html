@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<!-- GENERIERT von kurse/_build (web_security) – nicht direkt bearbeiten!
+     Quelle: kurse/_build/web_security/lessons/, bauen: python3 _build/build.py web_security -->
+<html lang="de">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2.1 &ndash; Login &amp; Sessions in Next.js | Web Security &amp; Identity Kurs</title>
+  <script>(function () { var t = localStorage.getItem('kurs-theme') || 'dark'; document.documentElement.setAttribute('data-theme', t); })();</script>
+  <link rel="stylesheet" href="assets/kurs.css">
+  <link rel="stylesheet" id="hljs-theme"
+    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+
+<body>
+
+  <button class="hamburger" id="hamburger" aria-label="Navigation &ouml;ffnen">&#9776;</button>
+  <div class="sidebar-overlay" id="overlay"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <a href="index.html">
+        <span class="brand-icon">&#128274;</span>
+        <div>
+          <div class="brand-name">Web Security</div>
+          <div class="brand-sub">Web- und Mobile Computing</div>
+        </div>
+      </a>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Dark/Light Mode"
+        title="Theme wechseln">&#9728;</button>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group">
+        <div class="nav-group-label sec-label">Teil 1 &mdash; Konzepte</div>
+        <a class="nav-link" href="1.1-grundlagen.html"><span class="ln">1.1</span>Grundlagen der Web-Security</a>
+        <a class="nav-link" href="1.2-passwoerter.html"><span class="ln">1.2</span>Passwörter sicher speichern</a>
+        <a class="nav-link" href="1.3-sessions-cookies.html"><span class="ln">1.3</span>Sessions &amp; Cookies</a>
+        <a class="nav-link" href="1.4-jwt-tokens.html"><span class="ln">1.4</span>JWT &amp; Token-basierte Authentifizierung</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label secdev-label">Teil 2 &mdash; Umsetzung mit Next.js</div>
+        <a class="nav-link" href="2.1-login-sessions.html"><span class="ln">2.1</span>Login &amp; Sessions in Next.js</a>
+        <a class="nav-link" href="2.2-oauth-oidc-sso.html"><span class="ln">2.2</span>OAuth 2.0, OpenID Connect &amp; SSO</a>
+        <a class="nav-link" href="2.3-mfa-passkeys.html"><span class="ln">2.3</span>MFA, TOTP &amp; Passkeys</a>
+        <a class="nav-link" href="2.4-access-control.html"><span class="ln">2.4</span>Authorization &amp; Access Control</a>
+        <a class="nav-link" href="2.5-injection.html"><span class="ln">2.5</span>Injection &amp; unsichere Eingaben</a>
+        <a class="nav-link" href="2.6-xss-csrf.html"><span class="ln">2.6</span>XSS, CSRF &amp; Clickjacking</a>
+        <a class="nav-link" href="2.7-api-security.html"><span class="ln">2.7</span>API Security</a>
+        <a class="nav-link" href="2.8-secure-development.html"><span class="ln">2.8</span>Secure Development &amp; OWASP</a>
+      </div>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <header class="lesson-header">
+      <p class="lesson-eyebrow">Lektion 2.1 &mdash; Teil 2: Umsetzung mit Next.js</p>
+      <h1>Login &amp; Sessions in Next.js</h1>
+      <div class="lesson-tags">
+        <span class="tag tag-secdev">Authentication</span>
+        <span class="tag tag-time">ca. 75 min</span>
+        <span class="tag tag-level">Grundlagen</span>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <section class="section section-lernziele">
+        <h2>Lernziele</h2>
+        <ul class="lernziele-list">
+          <li>Ein Datenmodell für Benutzer und serverseitige Sessions mit Drizzle anlegen</li>
+          <li>Passwörter mit Argon2id hashen und prüfen</li>
+          <li>Session-Tokens mit <code>node:crypto</code> erzeugen und als sichere Cookies setzen</li>
+          <li>Eingaben am Server mit Zod validieren</li>
+          <li>Registrierung, Login und Logout als Server Actions umsetzen – ohne User Enumeration und Session Fixation</li>
+          <li>Seiten mit <code>requireUser()</code> schützen</li>
+          <li>Next.js-spezifische Bausteine von allgemeinen Sicherheitskonzepten unterscheiden</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>1 — Ausgangslage: FlugBoard bekommt Benutzerkonten</h2>
+        <p>
+          In Teil 1 hast du die Konzepte kennengelernt, jetzt setzen wir sie um. Wir verwenden denselben
+          Stack wie das FlugBoard am Ende des <a href="../react/index.html">React-Kurses</a>: Next.js mit
+          App Router, Server Actions und Route Handlers, Drizzle ORM mit SQLite und TypeScript. Das
+          FlugBoard wird Lektion für Lektion um Sicherheitsfunktionen erweitert:
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Lektion</th><th>Neu im FlugBoard</th></tr></thead>
+            <tbody>
+              <tr><td>2.1</td><td>Registrierung, Login, Logout, serverseitige Sessions</td></tr>
+              <tr><td>2.2</td><td>„Anmelden mit …“ über OpenID Connect</td></tr>
+              <tr><td>2.3</td><td>Authenticator-App (TOTP) und Passkeys</td></tr>
+              <tr><td>2.4</td><td>Rollen (Passagier, Personal, Admin), Buchungen, Middleware</td></tr>
+              <tr><td>2.5</td><td>sichere Flugsuche, Netzwerk-Diagnose, Datei-Uploads</td></tr>
+              <tr><td>2.6</td><td>sichere Ausgabe, Content Security Policy, CSRF-Schutz</td></tr>
+              <tr><td>2.7</td><td>öffentliche Partner-API mit API Keys, Tokens, Rate Limiting, CORS</td></tr>
+              <tr><td>2.8</td><td>Security Headers, Umgebungsvariablen, Logging, CI, Security-Tests</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Für diese Lektion brauchst du zwei zusätzliche Pakete:</p>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">Terminal</span>
+    <span class="code-lang">Bash</span>
+  </div>
+  <pre><code class="language-bash">npm install @node-rs/argon2 zod</code></pre>
+</div>
+        <div class="callout callout-info">
+  <div class="callout-icon">&#8505;</div>
+  <div class="callout-body">
+    <div class="callout-title">Code zum Nachlesen</div>
+    <p>Alle Codebeispiele dieses Teils sind vollständige Dateien, die zusammen ein lauffähiges Projekt
+          ergeben. Sie wurden mit dem TypeScript-Compiler geprüft und im Browser getestet.</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>2 — Datenmodell: Benutzer und Sessions</h2>
+        <p>
+          Zur bestehenden Tabelle <code>flights</code> kommen zwei neue Tabellen: <code>users</code> speichert
+          E-Mail, Passwort-Hash und Rolle, <code>sessions</code> ist unser <strong>Session-Store</strong> aus
+          Lektion 1.3.
+        </p>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/db/schema.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+
+// Bestehende Tabelle aus dem React-Kurs (gekürzt)
+export const flights = sqliteTable('flights', {
+  id: integer('id').primaryKey(),
+  flightNumber: text('flight_number').notNull(),
+  airline: text('airline').notNull(),
+  airport: text('airport').notNull(),
+  terminal: text('terminal').notNull(),
+  scheduledTime: text('scheduled_time').notNull(),
+});
+
+export const users = sqliteTable('users', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  email: text('email').notNull().unique(),
+  passwordHash: text('password_hash').notNull(),
+  role: text('role', { enum: ['passenger', 'staff', 'admin'] })
+    .notNull()
+    .default('passenger'),
+});
+
+export const sessions = sqliteTable('sessions', {
+  // SHA-256-Hash des Session-Tokens – das Token selbst steht nur im Cookie
+  id: text('id').primaryKey(),
+  userId: integer('user_id')
+    .notNull()
+    .references(() =&gt; users.id, { onDelete: 'cascade' }),
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+});</code></pre>
+</div>
+        <ul>
+          <li><code>role</code> ist auf drei Werte beschränkt und standardmäßig <code>passenger</code> – neue Konten haben minimale Rechte (Secure by Default).</li>
+          <li><code>sessions.id</code> enthält nicht das Session-Token selbst, sondern dessen <strong>Hash</strong>. Wird die Datenbank gestohlen, kann niemand mit den Einträgen eine Session übernehmen – dasselbe Prinzip wie bei Passwörtern.</li>
+          <li><code>onDelete: 'cascade'</code> löscht beim Entfernen eines Benutzers auch alle seine Sessions.</li>
+        </ul>
+        <p>Die Datenbankverbindung und die Konfiguration für <code>drizzle-kit</code>, das die Tabellen anlegt:</p>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/db/index.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import Database from 'better-sqlite3';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+
+import * as schema from './schema';
+
+const sqlite = new Database(process.env.DATABASE_PATH ?? 'flugboard.sqlite');
+
+export const db = drizzle(sqlite, { schema });</code></pre>
+</div>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">drizzle.config.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import { defineConfig } from 'drizzle-kit';
+
+// Tabellen anlegen bzw. anpassen mit: npx drizzle-kit push
+export default defineConfig({
+  dialect: 'sqlite',
+  schema: './src/db/schema.ts',
+  dbCredentials: { url: process.env.DATABASE_PATH ?? 'flugboard.sqlite' },
+});</code></pre>
+</div>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">Terminal</span>
+    <span class="code-lang">Bash</span>
+  </div>
+  <pre><code class="language-bash">npx drizzle-kit push</code></pre>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>3 — Passwörter hashen mit Argon2id</h2>
+        <p>
+          Das Paket <code>@node-rs/argon2</code> implementiert Argon2 (Lektion 1.2). Es erzeugt den Salt
+          selbst und schreibt Verfahren, Parameter und Salt in den Hash-String – wir müssen nur die
+          Parameter wählen.
+        </p>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/lib/password.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import { hash, verify } from '@node-rs/argon2';
+
+// Argon2id (Standard der Bibliothek) mit den Mindestwerten
+// aus dem OWASP Password Storage Cheat Sheet: 19 MiB Speicher, 2 Durchläufe
+const OPTIONS = { memoryCost: 19456, timeCost: 2, parallelism: 1 };
+
+export function hashPassword(password: string): Promise&lt;string&gt; {
+  // Salt erzeugt die Bibliothek selbst und speichert ihn im Hash-String
+  return hash(password, OPTIONS);
+}
+
+export function verifyPassword(passwordHash: string, password: string): Promise&lt;boolean&gt; {
+  return verify(passwordHash, password);
+}
+
+// Wird geprüft, wenn es den Benutzer gar nicht gibt – so dauert ein
+// Login mit unbekannter E-Mail-Adresse genauso lange wie mit bekannter.
+export const dummyHash = hashPassword('dummy-password-for-timing');</code></pre>
+</div>
+        <p>Ein gespeicherter Hash sieht etwa so aus – alles, was zum Prüfen nötig ist, steht darin:</p>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">users.password_hash</span>
+    <span class="code-lang">Text</span>
+  </div>
+  <pre><code class="language-plaintext">$argon2id$v=19$m=19456,t=2,p=1$Yk4wVnlr…(Salt)…$3vPq…(Hash)…</code></pre>
+</div>
+        <p>
+          <code>dummyHash</code> brauchen wir beim Login: Gibt es die E-Mail-Adresse nicht, prüfen wir trotzdem
+          einen Hash. Sonst wäre die Antwort für unbekannte Adressen messbar schneller, und Angreifer könnten
+          über die Antwortzeit herausfinden, welche Konten existieren (User Enumeration).
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>4 — Neue Werkzeuge: <code>node:crypto</code> und <code>cookies()</code></h2>
+        <h3>Sichere Zufallswerte und Hashes</h3>
+        <p>Das eingebaute Node-Modul <code>node:crypto</code> liefert alles, was wir für Session-Tokens brauchen:</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Funktion</th><th>Zweck</th></tr></thead>
+            <tbody>
+              <tr><td><code>randomBytes(32)</code></td><td>32 Bytes aus einem <strong>kryptografisch sicheren</strong> Zufallsgenerator – im Gegensatz zu <code>Math.random()</code>, das vorhersagbar ist</td></tr>
+              <tr><td><code>.toString('base64url')</code></td><td>Bytes als URL- und Cookie-taugliche Zeichenkette</td></tr>
+              <tr><td><code>createHash('sha256')</code></td><td>schneller Hash – für zufällige Tokens mit 256 Bit genau richtig (für Passwörter nicht, siehe Lektion 1.2)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>Cookies in Next.js</h3>
+        <p>
+          Die Funktion <code>cookies()</code> aus <code>next/headers</code> gibt Zugriff auf die Cookies der
+          aktuellen Anfrage. Sie ist <code>async</code> und funktioniert nur am Server.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Methode</th><th>Erlaubt in</th></tr></thead>
+            <tbody>
+              <tr><td><code>get(name)</code>, <code>has(name)</code></td><td>Server Components, Server Actions, Route Handlers</td></tr>
+              <tr><td><code>set(name, value, options)</code>, <code>delete(name)</code></td><td>nur Server Actions und Route Handlers – eine Server Component darf keine Cookies setzen</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>5 — Sessions erzeugen, prüfen und beenden</h2>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/lib/session.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import { createHash, randomBytes } from 'node:crypto';
+
+import { eq } from 'drizzle-orm';
+import { cookies } from 'next/headers';
+
+import { db } from '@/db';
+import { sessions, users } from '@/db/schema';
+
+const SESSION_COOKIE = 'session';
+const SESSION_DURATION_MS = 8 * 60 * 60 * 1000; // absolute Laufzeit: 8 Stunden
+
+function hashToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex');
+}
+
+/** Legt nach einem erfolgreichen Login eine neue Session an. */
+export async function createSession(userId: number): Promise&lt;void&gt; {
+  // 32 zufällige Bytes = 256 Bit, kryptografisch sicher erzeugt
+  const token = randomBytes(32).toString('base64url');
+  const expiresAt = new Date(Date.now() + SESSION_DURATION_MS);
+
+  await db.insert(sessions).values({ id: hashToken(token), userId, expiresAt });
+
+  const cookieStore = await cookies();
+  cookieStore.set(SESSION_COOKIE, token, {
+    httpOnly: true, // für JavaScript im Browser unsichtbar
+    secure: process.env.NODE_ENV === 'production', // nur über HTTPS
+    sameSite: 'lax', // nicht bei Cross-Site-POSTs mitschicken
+    path: '/',
+    expires: expiresAt,
+  });
+}
+
+/** Liefert den angemeldeten Benutzer oder null. */
+export async function getSessionUser() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
+  if (!token) return null;
+
+  const row = db
+    .select({
+      // nur die Felder, die die Anwendung braucht – kein Passwort-Hash
+      user: { id: users.id, email: users.email, role: users.role },
+      expiresAt: sessions.expiresAt,
+    })
+    .from(sessions)
+    .innerJoin(users, eq(sessions.userId, users.id))
+    .where(eq(sessions.id, hashToken(token)))
+    .get();
+
+  if (!row || row.expiresAt.getTime() &lt; Date.now()) return null;
+  return row.user;
+}
+
+/** Beendet die Session am Server und im Browser. */
+export async function deleteSession(): Promise&lt;void&gt; {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
+  if (token) {
+    await db.delete(sessions).where(eq(sessions.id, hashToken(token)));
+  }
+  cookieStore.delete(SESSION_COOKIE);
+}</code></pre>
+</div>
+        <p>Jede Zeile setzt eine Regel aus Lektion 1.3 um:</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Code</th><th>Regel</th></tr></thead>
+            <tbody>
+              <tr><td><code>randomBytes(32)</code></td><td>Session-ID zufällig, mindestens 128 Bit, ohne Bedeutung</td></tr>
+              <tr><td><code>httpOnly: true</code></td><td>Diebstahl per XSS verhindern</td></tr>
+              <tr><td><code>secure: …production</code></td><td>nur über HTTPS (lokal läuft der Dev-Server mit HTTP)</td></tr>
+              <tr><td><code>sameSite: 'lax'</code></td><td>Schutz vor Cross-Site-Anfragen</td></tr>
+              <tr><td><code>expires</code> + Prüfung von <code>expiresAt</code></td><td>Absolute Timeout – am Server geprüft, nicht nur im Browser</td></tr>
+              <tr><td><code>db.delete(sessions)</code> in <code>deleteSession</code></td><td>Logout beendet die Session am Server</td></tr>
+              <tr><td><code>select({ user: { id, email, role } })</code></td><td>Passwort-Hash verlässt die Datenbankschicht nicht</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Damit Seiten bequem auf den angemeldeten Benutzer zugreifen können, kommt eine kleine Hilfsdatei dazu:</p>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/lib/auth.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import { redirect } from 'next/navigation';
+import { cache } from 'react';
+
+import { getSessionUser } from './session';
+
+// cache: pro Anfrage nur einmal in der Datenbank nachsehen,
+// auch wenn mehrere Komponenten getCurrentUser() aufrufen
+export const getCurrentUser = cache(getSessionUser);
+
+export type CurrentUser = NonNullable&lt;Awaited&lt;ReturnType&lt;typeof getSessionUser&gt;&gt;&gt;;
+
+/** Für geschützte Seiten: ohne Login geht es zur Anmeldung. */
+export async function requireUser(): Promise&lt;CurrentUser&gt; {
+  const user = await getCurrentUser();
+  if (!user) redirect('/login');
+  return user;
+}</code></pre>
+</div>
+        <p>
+          <code>cache</code> aus React merkt sich das Ergebnis für die Dauer <em>einer</em> Anfrage: Rufen Layout,
+          Seite und mehrere Komponenten <code>getCurrentUser()</code> auf, wird die Datenbank trotzdem nur einmal
+          gefragt. <code>redirect()</code> kennst du aus dem React-Kurs (Lektion 3.4).
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>6 — Eingaben prüfen mit Zod</h2>
+        <p>
+          Die Prüfung im Browser (<code>required</code>, <code>minLength</code>) ist nur Komfort – jeder kann
+          eine Server Action auch ohne unser Formular aufrufen. Am Server verwenden wir
+          <strong>Zod</strong>, eine Bibliothek, mit der man ein <strong>Schema</strong> für erwartete Daten
+          beschreibt und Eingaben dagegen prüft:
+        </p>
+        <ul>
+          <li><code>z.object({ … })</code> beschreibt ein Objekt mit Feldern; <code>z.string().min(15).max(128)</code> einen Text mit Längengrenzen, <code>z.email()</code> eine E-Mail-Adresse.</li>
+          <li><code>schema.safeParse(daten)</code> wirft keinen Fehler, sondern liefert <code>{ success: true, data }</code> oder <code>{ success: false, error }</code>.</li>
+          <li>Nach erfolgreicher Prüfung ist <code>data</code> korrekt typisiert – TypeScript kennt die Felder.</li>
+        </ul>
+        <p>Zod begleitet uns durch den ganzen Teil 2 (Allowlists in 2.4, Request Validation in 2.7).</p>
+      </section>
+
+      <section class="section">
+        <h2>7 — Registrierung, Login und Logout</h2>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/actions/auth-actions.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">'use server';
+
+import { eq } from 'drizzle-orm';
+import { redirect } from 'next/navigation';
+import { z } from 'zod';
+
+import { db } from '@/db';
+import { users } from '@/db/schema';
+import { dummyHash, hashPassword, verifyPassword } from '@/lib/password';
+import { createSession, deleteSession } from '@/lib/session';
+
+const registerSchema = z.object({
+  email: z.email().max(254),
+  password: z.string().min(15).max(128),
+});
+
+function readCredentials(formData: FormData) {
+  return {
+    email: String(formData.get('email') ?? '').trim().toLowerCase(),
+    password: String(formData.get('password') ?? ''),
+  };
+}
+
+export async function register(formData: FormData) {
+  const parsed = registerSchema.safeParse(readCredentials(formData));
+  if (!parsed.success) redirect('/register?error=invalid');
+
+  const { email, password } = parsed.data;
+  const existing = db.select({ id: users.id }).from(users)
+    .where(eq(users.email, email)).get();
+  if (existing) redirect('/register?error=invalid');
+
+  const passwordHash = await hashPassword(password);
+  const user = db.insert(users).values({ email, passwordHash })
+    .returning({ id: users.id }).get();
+
+  await createSession(user.id);
+  redirect('/konto');
+}
+
+export async function login(formData: FormData) {
+  const { email, password } = readCredentials(formData);
+  const user = db.select({ id: users.id, passwordHash: users.passwordHash })
+    .from(users).where(eq(users.email, email)).get();
+
+  // Auch bei unbekannter E-Mail einen Hash prüfen (gleiche Antwortzeit)
+  const valid = await verifyPassword(user?.passwordHash ?? (await dummyHash), password);
+
+  // Eine Meldung für alle Fehlerfälle – keine User Enumeration
+  if (!user || !valid) redirect('/login?error=1');
+
+  await createSession(user.id); // immer eine NEUE Session (gegen Fixation)
+  redirect('/konto');
+}
+
+export async function logout() {
+  await deleteSession();
+  redirect('/login');
+}</code></pre>
+</div>
+        <ul>
+          <li><strong>Einheitliche Fehlermeldungen:</strong> Login kennt nur <code>error=1</code>, egal ob die E-Mail fehlt oder das Passwort falsch ist.</li>
+          <li><strong>Gleiche Antwortzeit:</strong> Gibt es den Benutzer nicht, wird gegen <code>dummyHash</code> geprüft.</li>
+          <li><strong>Neue Session bei jedem Login:</strong> <code>createSession</code> erzeugt immer ein neues Token – Session Fixation ist ausgeschlossen.</li>
+          <li><strong>E-Mail normalisieren:</strong> <code>trim().toLowerCase()</code>, damit „Anna@Example.com“ und „anna@example.com“ dasselbe Konto sind.</li>
+          <li><code>redirect()</code> beendet die Funktion sofort (Rückgabetyp <code>never</code>) – deshalb weiß TypeScript nach <code>if (!user || !valid) redirect(…)</code>, dass <code>user</code> existiert.</li>
+        </ul>
+        <div class="callout callout-warning">
+  <div class="callout-icon">&#9888;</div>
+  <div class="callout-body">
+    <div class="callout-title">Registrierung und User Enumeration</div>
+    <p>Auch die Registrierung verrät, ob eine Adresse schon existiert. Unsere Meldung ist neutral
+          gehalten („Bitte Eingaben prüfen“). Ganz verhindern lässt sich das nur, wenn die Bestätigung per
+          E-Mail erfolgt: „Wir haben dir eine Nachricht geschickt“ – bei bestehenden Konten mit dem Hinweis,
+          dass bereits ein Konto existiert.</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>8 — Login-Seite und geschützte Seite</h2>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/app/login/page.tsx</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import Link from 'next/link';
+
+import { login } from '@/actions/auth-actions';
+
+interface LoginPageProps {
+  searchParams: Promise&lt;{ error?: string }&gt;;
+}
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const { error } = await searchParams;
+
+  return (
+    &lt;main&gt;
+      &lt;h1&gt;Anmelden&lt;/h1&gt;
+      {error &amp;&amp; &lt;p role="alert"&gt;E-Mail oder Passwort ist falsch.&lt;/p&gt;}
+      &lt;form action={login}&gt;
+        &lt;label&gt;
+          E-Mail
+          &lt;input name="email" type="email" autoComplete="username" required /&gt;
+        &lt;/label&gt;
+        &lt;label&gt;
+          Passwort
+          &lt;input name="password" type="password" autoComplete="current-password" required /&gt;
+        &lt;/label&gt;
+        &lt;button type="submit"&gt;Anmelden&lt;/button&gt;
+      &lt;/form&gt;
+      &lt;p&gt;&lt;Link href="/register"&gt;Konto erstellen&lt;/Link&gt;&lt;/p&gt;
+    &lt;/main&gt;
+  );
+}</code></pre>
+</div>
+        <p>
+          <code>autoComplete="username"</code> und <code>"current-password"</code> helfen Passwort-Managern –
+          ein Sicherheitsgewinn, denn Passwort-Manager erzeugen lange, zufällige Passwörter und füllen sie nur
+          auf der echten Domain aus. Die Registrierungsseite <code>src/app/register/page.tsx</code> ist analog
+          aufgebaut (mit <code>"new-password"</code>).
+        </p>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/app/konto/page.tsx</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import { logout } from '@/actions/auth-actions';
+import { requireUser } from '@/lib/auth';
+
+export default async function KontoPage() {
+  const user = await requireUser();
+
+  return (
+    &lt;main&gt;
+      &lt;h1&gt;Mein Konto&lt;/h1&gt;
+      &lt;p&gt;Angemeldet als {user.email} (Rolle: {user.role})&lt;/p&gt;
+      &lt;form action={logout}&gt;
+        &lt;button type="submit"&gt;Abmelden&lt;/button&gt;
+      &lt;/form&gt;
+    &lt;/main&gt;
+  );
+}</code></pre>
+</div>
+        <div class="callout callout-tip">
+  <div class="callout-icon">&#128161;</div>
+  <div class="callout-body">
+    <div class="callout-title">In den DevTools prüfen</div>
+    <p>Registriere dich und öffne <strong>Application → Cookies</strong>: Das Cookie <code>session</code>
+          hat <code>HttpOnly</code> und <code>SameSite=Lax</code>. In der Konsole liefert
+          <code>document.cookie</code> einen leeren String – JavaScript sieht das Cookie nicht.</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>9 — Was ist hier Next.js, was ist allgemein?</h2>
+        <p>
+          Die Sicherheitskonzepte dieses Teils gelten für jedes Backend – ob Next.js, Hono (wie im
+          Deno-Backend des React-Kurses, Lektionen 2.2 und 2.8), Express oder Spring. Next.js ist nur die
+          „Verpackung“. Diese Bausteine sehen in einem anderen Framework anders aus:
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Baustein</th><th>Next.js (dieser Kurs)</th><th>Hono</th><th>Allgemeines Prinzip</th></tr></thead>
+            <tbody>
+              <tr><td>Cookie lesen/setzen</td><td><code>cookies()</code> aus <code>next/headers</code></td><td><code>getCookie</code>/<code>setCookie(c, …)</code> aus <code>hono/cookie</code></td><td><code>Cookie</code>- bzw. <code>Set-Cookie</code>-Header</td></tr>
+              <tr><td>Formular verarbeiten</td><td>Server Action</td><td><code>app.post('/login', …)</code></td><td>POST-Endpunkt</td></tr>
+              <tr><td>CSRF-Schutz für Formulare</td><td>Origin-Prüfung automatisch bei Server Actions</td><td>selbst prüfen (Middleware <code>csrf()</code> oder eigene Funktion wie <code>isSameOrigin</code> in Lektion 2.6)</td><td><code>Origin</code>-Header prüfen, <code>SameSite</code>-Cookies</td></tr>
+              <tr><td>Vorab-Prüfung aller Anfragen</td><td><code>src/middleware.ts</code> (Lektion 2.4)</td><td><code>app.use(…)</code></td><td>Middleware</td></tr>
+              <tr><td>Umleiten / nicht gefunden</td><td><code>redirect()</code>, <code>notFound()</code></td><td><code>c.redirect()</code>, <code>c.notFound()</code></td><td>Status 3xx bzw. 404</td></tr>
+              <tr><td>Benutzer einmal pro Anfrage laden</td><td><code>cache()</code> aus React</td><td><code>c.set('user', …)</code> in einer Middleware</td><td>Wert an die Anfrage hängen</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout callout-tip">
+  <div class="callout-icon">&#128161;</div>
+  <div class="callout-body">
+    <div class="callout-title">Übertragbarer Code</div>
+    <p>Was in <code>src/lib/</code> steht – Passwort-Hashing, Erzeugen und Hashen der Session-Tokens,
+          Datenbankzugriffe, später auch TOTP, Verschlüsselung, Rate Limiting, CORS und SSRF-Schutz –, lässt
+          sich bis auf den Zugriff über <code>cookies()</code> unverändert in einem anderen Node- oder
+          Deno-Backend verwenden. Wer die Konzepte verstanden hat, findet sich in jedem Framework zurecht.</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section section-fehler">
+        <h2>Häufige Fehler</h2>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: Cookie in einer Server Component setzen</div>
+  <p>Die Konto-Seite soll die Session verlängern und ruft <code>cookies().set(…)</code> auf. Next.js wirft den Fehler „Cookies can only be modified in a Server Action or Route Handler“.</p>
+          <p class="fehler-fix">Cookies nur in Server Actions oder Route Handlers setzen; Server Components lesen sie nur.</p>
+</div>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: Token im Klartext in der Datenbank</div>
+  <p>Die Tabelle <code>sessions</code> speichert das Token direkt. Wer ein Datenbank-Backup in die Hände bekommt, kann sich als jeder angemeldete Benutzer ausgeben.</p>
+          <p class="fehler-fix">Nur den SHA-256-Hash speichern und beim Prüfen das Token aus dem Cookie hashen.</p>
+</div>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: Validierung nur im Formular</div>
+  <p>Das Passwortfeld hat <code>minLength={15}</code>, die Server Action prüft nichts. Mit den DevTools entfernt man das Attribut und registriert sich mit „123“.</p>
+          <p class="fehler-fix">Jede Regel am Server prüfen – hier mit dem Zod-Schema in der Server Action.</p>
+</div>
+      </section>
+
+      <section class="section section-aufgaben">
+        <h2>Aufgaben</h2>
+        <div class="aufgaben-list">
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 1</span>
+    <span class="aufgabe-title">Projekt aufsetzen</span>
+  </div>
+  <p>Übernimm die Dateien dieser Lektion in dein FlugBoard-Projekt, lege die Tabellen mit <code>npx drizzle-kit push</code> an und teste Registrierung, Login und Logout. Prüfe in den DevTools die Cookie-Attribute und in der Datenbank (z.&nbsp;B. mit <code>sqlite3 flugboard.sqlite</code>), dass nur Hashes gespeichert sind.</p>
+</div>
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 2</span>
+    <span class="aufgabe-title">Überall abmelden</span>
+  </div>
+  <p>Ergänze eine Server Action <code>logoutEverywhere</code>, die alle Sessions des angemeldeten Benutzers löscht, und einen Button dafür auf der Konto-Seite.</p>
+</div>
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 3</span>
+    <span class="aufgabe-title">Passwort ändern</span>
+  </div>
+  <p>Baue ein Formular „Passwort ändern“. Die Server Action verlangt das aktuelle Passwort (Re-Authentication), prüft das neue mit dem Zod-Schema, speichert den neuen Hash und beendet alle <em>anderen</em> Sessions des Benutzers.</p>
+</div>
+          <div class="aufgabe aufgabe-bonus">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Bonus</span>
+    <span class="aufgabe-title">Idle Timeout</span>
+  </div>
+  <p>Ergänze die Tabelle <code>sessions</code> um <code>lastSeenAt</code>. Eine Session soll nach 30 Minuten ohne Aktivität ungültig werden, unabhängig vom Absolute Timeout. Überlege, wo <code>lastSeenAt</code> aktualisiert werden kann, wenn Server Components keine Cookies setzen dürfen (Tipp: Die Datenbank darf eine Server Component sehr wohl ändern).</p>
+</div>
+        </div>
+      </section>
+
+      <section class="section section-quiz">
+        <h2>Wissenskontrolle</h2>
+        <div class="quiz" id="quiz-1">
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 1</span> Warum speichert die Tabelle <code>sessions</code> den SHA-256-Hash des Tokens statt des Tokens selbst?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Weil Hashes kürzer sind und Speicher sparen</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-1"> <span>Damit gestohlene Datenbankinhalte nicht zum Übernehmen von Sessions reichen</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Weil der Browser das Token sonst nicht lesen kann</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Weil SQLite keine langen Texte speichern kann</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Wie beim Passwort gilt: Was in der Datenbank steht, kann bei einem Leck in falsche Hände geraten. Mit dem Hash allein lässt sich kein gültiges Cookie bauen. Für zufällige 256-Bit-Tokens genügt ein schneller Hash wie SHA-256 – ein langsames Verfahren wie Argon2 ist nur für erratbare Passwörter nötig.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 2</span> Warum verwendet <code>createSession</code> <code>randomBytes</code> statt <code>Math.random()</code>?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Weil <code>Math.random()</code> nur am Client funktioniert</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-2"> <span>Weil <code>Math.random()</code> nicht kryptografisch sicher und damit vorhersagbar ist</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Weil <code>randomBytes</code> schneller ist</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Weil Cookies nur Bytes speichern können</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> <code>Math.random()</code> ist für Spiele und Animationen gedacht; seine Werte lassen sich unter Umständen vorhersagen. Für Session-Tokens, Reset-Links und Ähnliches braucht man einen kryptografisch sicheren Zufallsgenerator wie <code>randomBytes</code> oder <code>crypto.randomUUID()</code>.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 3</span> Wozu prüft <code>login</code> gegen <code>dummyHash</code>, wenn es den Benutzer nicht gibt?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>Damit der Benutzer automatisch angelegt wird</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>Damit Argon2 sich „aufwärmt“</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-3"> <span>Damit die Antwortzeit nicht verrät, ob die E-Mail-Adresse registriert ist</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>Damit falsche Passwörter protokolliert werden</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Ohne Dummy-Prüfung würde die Antwort für unbekannte Adressen sofort kommen, für bekannte erst nach der Argon2-Berechnung. Über diesen Zeitunterschied ließen sich gültige Konten ermitteln (User Enumeration), obwohl die Fehlermeldung gleich ist.</div>
+  </div>
+  <div class="quiz-frage" data-multi="1">
+    <p class="quiz-q"><span class="quiz-num">Frage 4</span> Wo darf in Next.js <code>cookies().set(…)</code> aufgerufen werden?</p>
+    <p class="quiz-hint">Mehrere Antworten sind richtig.</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-4"> <span>In Server Actions</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-4"> <span>In Route Handlers</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-4"> <span>In Server Components</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-4"> <span>In Client Components</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Cookies werden über die HTTP-Antwort gesetzt. Server Components dürfen sie nur lesen, weil ihre Ausgabe bereits gestreamt werden kann. Client Components laufen im Browser – ein dort gesetztes Cookie könnte ohnehin nicht <code>HttpOnly</code> sein.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 5</span> Welche Zeile verhindert Session Fixation?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span>Die Prüfung <code>row.expiresAt.getTime() &lt; Date.now()</code></span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-5"> <span><code>await createSession(user.id)</code> nach jedem erfolgreichen Login, das immer ein neues Token erzeugt</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span><code>sameSite: 'lax'</code></span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span><code>z.email().max(254)</code></span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Session Fixation funktioniert nur, wenn eine vorher bekannte ID nach dem Login weiterverwendet wird. Da jedes Login ein neues, zufälliges Token erzeugt, ist eine untergeschobene ID wertlos. Die anderen Zeilen setzen Timeout, CSRF-Schutz und Eingabeprüfung um.</div>
+  </div>
+  <div class="quiz-frage" data-multi="1">
+    <p class="quiz-q"><span class="quiz-num">Frage 6</span> Welche Bausteine des FlugBoard-Logins sind <strong>Next.js-spezifisch</strong> und sehen in einem anderen Backend (z.&nbsp;B. Hono) anders aus?</p>
+    <p class="quiz-hint">Mehrere Antworten sind richtig.</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-6"> <span><code>cookies()</code> aus <code>next/headers</code></span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-6"> <span>Server Actions mit ihrer automatischen Origin-Prüfung</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-6"> <span>Argon2id-Hashing mit <code>@node-rs/argon2</code></span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-6"> <span>Validierung mit Zod</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Cookie-Zugriff und Server Actions sind Funktionen von Next.js; in Hono verwendet man <code>setCookie</code> und normale POST-Routen und prüft den Origin selbst. Argon2 und Zod sind gewöhnliche Bibliotheken, die in jedem JavaScript-Backend gleich funktionieren.</div>
+  </div>
+  <div class="quiz-summary"><span class="quiz-score"></span><button type="button" class="quiz-reset">Zur&uuml;cksetzen</button></div>
+</div>
+      </section>
+
+    </div>
+
+    <nav class="lesson-nav">
+      <a class="nav-btn" href="1.4-jwt-tokens.html">&larr; Lektion 1.4: JWT &amp; Token-basierte Authentifizierung</a>
+      <span class="nav-center-info">Lektion 2.1</span>
+      <a class="nav-btn primary" href="2.2-oauth-oidc-sso.html">Lektion 2.2: OAuth 2.0, OpenID Connect &amp; SSO &rarr;</a>
+    </nav>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>
+    const ham = document.getElementById('hamburger');
+    const sb = document.getElementById('sidebar');
+    const ov = document.getElementById('overlay');
+    ham.addEventListener('click', () => { sb.classList.toggle('open'); ov.classList.toggle('visible'); });
+    ov.addEventListener('click', () => { sb.classList.remove('open'); ov.classList.remove('visible'); });
+    const cur = window.location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.nav-link').forEach(l => {
+      if (l.getAttribute('href') === cur) l.classList.add('active');
+    });
+    const themeBtn = document.getElementById('theme-toggle');
+    const applyTheme = (t) => {
+      document.documentElement.setAttribute('data-theme', t);
+      if (themeBtn) themeBtn.innerHTML = t === 'dark' ? '&#9728;' : '&#9790;';
+    };
+    applyTheme(localStorage.getItem('kurs-theme') || 'dark');
+    setTimeout(() => document.documentElement.classList.add('theme-transitions'), 50);
+    if (themeBtn) themeBtn.addEventListener('click', () => {
+      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('kurs-theme', next);
+      applyTheme(next);
+    });
+    hljs.highlightAll();
+  </script>
+  <script>
+    document.querySelectorAll('.quiz').forEach((quiz) => {
+      const fragen = [...quiz.querySelectorAll('.quiz-frage')];
+      const score = quiz.querySelector('.quiz-score');
+      const update = () => {
+        const done = fragen.filter((f) => f.dataset.state).length;
+        const ok = fragen.filter((f) => f.dataset.state === 'ok').length;
+        score.textContent = done === 0
+          ? fragen.length + ' Fragen – wähle eine Antwort und prüfe sie.'
+          : ok + ' von ' + fragen.length + ' richtig'
+            + (done < fragen.length ? ' (' + done + ' von ' + fragen.length + ' bearbeitet)' : '');
+      };
+      fragen.forEach((f) => {
+        const inputs = [...f.querySelectorAll('input')];
+        const check = f.querySelector('.quiz-check');
+        const reveal = f.querySelector('.quiz-reveal');
+        const fb = f.querySelector('.quiz-feedback');
+        const exp = f.querySelector('.quiz-erklaerung');
+        inputs.forEach((i) => i.addEventListener('change', () => {
+          check.disabled = !inputs.some((x) => x.checked);
+        }));
+        const finish = (graded) => {
+          let allOk = true;
+          f.querySelectorAll('.quiz-opt').forEach((li) => {
+            const input = li.querySelector('input');
+            const corr = li.dataset.correct === '1';
+            if (corr !== input.checked) allOk = false;
+            if (corr) li.classList.add('opt-correct');
+            else if (input.checked) li.classList.add('opt-wrong');
+            input.disabled = true;
+          });
+          f.dataset.state = !graded ? 'shown' : (allOk ? 'ok' : 'wrong');
+          fb.className = 'quiz-feedback fb-' + f.dataset.state;
+          fb.textContent = !graded ? 'Lösung angezeigt.'
+            : (allOk ? '✔ Richtig!' : '✘ Leider nicht ganz – die richtige Lösung ist markiert.');
+          fb.hidden = false;
+          exp.hidden = false;
+          check.disabled = true;
+          reveal.disabled = true;
+          update();
+        };
+        check.addEventListener('click', () => finish(true));
+        reveal.addEventListener('click', () => finish(false));
+      });
+      quiz.querySelector('.quiz-reset').addEventListener('click', () => {
+        fragen.forEach((f) => {
+          delete f.dataset.state;
+          f.querySelectorAll('.quiz-opt').forEach((li) => li.classList.remove('opt-correct', 'opt-wrong'));
+          f.querySelectorAll('input').forEach((i) => { i.checked = false; i.disabled = false; });
+          f.querySelector('.quiz-check').disabled = true;
+          f.querySelector('.quiz-reveal').disabled = false;
+          f.querySelector('.quiz-feedback').hidden = true;
+          f.querySelector('.quiz-erklaerung').hidden = true;
+        });
+        update();
+      });
+      update();
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<!-- GENERIERT von kurse/_build (web_security) – nicht direkt bearbeiten!
+     Quelle: kurse/_build/web_security/lessons/, bauen: python3 _build/build.py web_security -->
+<html lang="de">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>1.2 &ndash; Passwörter sicher speichern | Web Security &amp; Identity Kurs</title>
+  <script>(function () { var t = localStorage.getItem('kurs-theme') || 'dark'; document.documentElement.setAttribute('data-theme', t); })();</script>
+  <link rel="stylesheet" href="assets/kurs.css">
+  <link rel="stylesheet" id="hljs-theme"
+    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+
+<body>
+
+  <button class="hamburger" id="hamburger" aria-label="Navigation &ouml;ffnen">&#9776;</button>
+  <div class="sidebar-overlay" id="overlay"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <a href="index.html">
+        <span class="brand-icon">&#128274;</span>
+        <div>
+          <div class="brand-name">Web Security</div>
+          <div class="brand-sub">Web- und Mobile Computing</div>
+        </div>
+      </a>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Dark/Light Mode"
+        title="Theme wechseln">&#9728;</button>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group">
+        <div class="nav-group-label sec-label">Teil 1 &mdash; Konzepte</div>
+        <a class="nav-link" href="1.1-grundlagen.html"><span class="ln">1.1</span>Grundlagen der Web-Security</a>
+        <a class="nav-link" href="1.2-passwoerter.html"><span class="ln">1.2</span>Passwörter sicher speichern</a>
+        <a class="nav-link" href="1.3-sessions-cookies.html"><span class="ln">1.3</span>Sessions &amp; Cookies</a>
+        <a class="nav-link" href="1.4-jwt-tokens.html"><span class="ln">1.4</span>JWT &amp; Token-basierte Authentifizierung</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label secdev-label">Teil 2 &mdash; Umsetzung mit Next.js</div>
+        <a class="nav-link" href="2.1-login-sessions.html"><span class="ln">2.1</span>Login &amp; Sessions in Next.js</a>
+        <a class="nav-link" href="2.2-oauth-oidc-sso.html"><span class="ln">2.2</span>OAuth 2.0, OpenID Connect &amp; SSO</a>
+        <a class="nav-link" href="2.3-mfa-passkeys.html"><span class="ln">2.3</span>MFA, TOTP &amp; Passkeys</a>
+        <a class="nav-link" href="2.4-access-control.html"><span class="ln">2.4</span>Authorization &amp; Access Control</a>
+        <a class="nav-link" href="2.5-injection.html"><span class="ln">2.5</span>Injection &amp; unsichere Eingaben</a>
+        <a class="nav-link" href="2.6-xss-csrf.html"><span class="ln">2.6</span>XSS, CSRF &amp; Clickjacking</a>
+        <a class="nav-link" href="2.7-api-security.html"><span class="ln">2.7</span>API Security</a>
+        <a class="nav-link" href="2.8-secure-development.html"><span class="ln">2.8</span>Secure Development &amp; OWASP</a>
+      </div>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <header class="lesson-header">
+      <p class="lesson-eyebrow">Lektion 1.2 &mdash; Teil 1: Konzepte</p>
+      <h1>Passwörter sicher speichern</h1>
+      <div class="lesson-tags">
+        <span class="tag tag-sec">Authentication</span>
+        <span class="tag tag-time">ca. 60 min</span>
+        <span class="tag tag-level">Grundlagen</span>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <section class="section section-lernziele">
+        <h2>Lernziele</h2>
+        <ul class="lernziele-list">
+          <li>Den Ablauf von Registrierung und Login mit Benutzername und Passwort beschreiben</li>
+          <li>Erklären, warum Passwörter gehasht und nicht verschlüsselt gespeichert werden</li>
+          <li>Begründen, warum schnelle Hashfunktionen wie SHA-256 für Passwörter ungeeignet sind</li>
+          <li>Salt und Pepper erklären und ihren Nutzen gegen Rainbow Tables darstellen</li>
+          <li>Argon2, bcrypt und PBKDF2 als Passwort-Hashing-Verfahren einordnen</li>
+          <li>Moderne Passwortregeln und Schutzmaßnahmen gegen Angriffe auf das Login nennen</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>1 — Username &amp; Password Authentication</h2>
+        <p>Die klassische Anmeldung besteht aus zwei Abläufen:</p>
+        <div class="two-col">
+          <div>
+            <h3 class="mt-0">Registrierung</h3>
+            <ol>
+              <li>Benutzer wählt Benutzername und Passwort.</li>
+              <li>Der Server prüft die Passwortregeln (Abschnitt 6).</li>
+              <li>Der Server berechnet einen <strong>Passwort-Hash</strong> und speichert nur diesen.</li>
+              <li>Das Passwort selbst wird sofort verworfen.</li>
+            </ol>
+          </div>
+          <div>
+            <h3 class="mt-0">Login</h3>
+            <ol>
+              <li>Benutzer schickt Benutzername und Passwort (über HTTPS).</li>
+              <li>Der Server lädt den gespeicherten Hash.</li>
+              <li>Er berechnet den Hash des eingegebenen Passworts mit denselben Parametern.</li>
+              <li>Stimmen beide überein, ist der Benutzer authentifiziert.</li>
+            </ol>
+          </div>
+        </div>
+        <p>Nach erfolgreichem Login muss sich der Server merken, dass der Benutzer angemeldet ist – das ist Thema von Lektion 1.3 (Sessions) und 1.4 (Tokens).</p>
+        <div class="callout callout-warning">
+  <div class="callout-icon">&#9888;</div>
+  <div class="callout-body">
+    <div class="callout-title">Keine Hinweise für Angreifer</div>
+    <p>Meldungen wie „Benutzer existiert nicht“ oder „Passwort falsch“ verraten, welche Konten es gibt
+          (<strong>User Enumeration</strong>). Besser ist immer dieselbe Meldung: „Benutzername oder
+          Passwort ist falsch.“ Dasselbe gilt für „Passwort vergessen“: „Falls ein Konto mit dieser
+          E-Mail-Adresse existiert, haben wir dir eine Nachricht geschickt.“</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>2 — Hashen statt Verschlüsseln</h2>
+        <p>
+          Eine <strong>Hashfunktion</strong> berechnet aus beliebigen Eingabedaten einen Wert fester Länge,
+          den <strong>Hash</strong>. Für Passwörter sind drei Eigenschaften entscheidend:
+        </p>
+        <ul>
+          <li><strong>Einwegfunktion:</strong> Aus dem Hash lässt sich das Passwort nicht zurückrechnen.</li>
+          <li><strong>Deterministisch:</strong> Dieselbe Eingabe ergibt mit denselben Parametern immer denselben Hash – nur so kann der Login vergleichen.</li>
+          <li><strong>Lawineneffekt:</strong> Ändert sich ein Zeichen im Passwort, ändert sich der Hash vollständig.</li>
+        </ul>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Speicherung</th><th>Was passiert bei einem Datenbank-Leck?</th></tr></thead>
+            <tbody>
+              <tr><td>Klartext</td><td>Alle Passwörter sind sofort lesbar – und weil viele Menschen Passwörter wiederverwenden, auch für andere Dienste.</td></tr>
+              <tr><td>Verschlüsselt</td><td>Verschlüsselung ist <strong>umkehrbar</strong>. Wer den Schlüssel erbeutet (er liegt meist auf demselben Server), entschlüsselt alle Passwörter.</td></tr>
+              <tr><td>Passwort-Hash</td><td>Angreifer müssen jedes Passwort einzeln erraten. Mit einem guten Verfahren dauert das sehr lange.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout callout-error">
+  <div class="callout-icon">&#10007;</div>
+  <div class="callout-body">
+    <div class="callout-title">Harte Regel</div>
+    <p>Passwörter werden <strong>nie</strong> im Klartext gespeichert, protokolliert oder per E-Mail verschickt.
+          Ein Dienst, der dir dein altes Passwort zuschicken kann, speichert es falsch.</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>3 — Warum SHA-256 &amp; Co. nicht reichen</h2>
+        <p>
+          Allgemeine Hashfunktionen wie MD5, SHA-1 oder SHA-256 sind darauf optimiert, <strong>schnell</strong>
+          zu sein. Für Dateien und digitale Signaturen ist das gut, für Passwörter schlecht: Eine moderne
+          Grafikkarte berechnet viele Milliarden SHA-256-Hashes pro Sekunde. Hat ein Angreifer die
+          Hash-Datenbank, probiert er offline einfach Kandidaten durch:
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Angriff</th><th>Vorgehen</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Brute Force</strong></td><td>Alle Zeichenkombinationen bis zu einer bestimmten Länge ausprobieren</td></tr>
+              <tr><td><strong>Wörterbuchangriff</strong></td><td>Listen häufiger und bereits geleakter Passwörter samt Varianten („Sommer2026!“) testen</td></tr>
+              <tr><td><strong>Rainbow Table</strong></td><td>Vorberechnete Tabellen „Hash → Passwort“ – das Knacken wird zum bloßen Nachschlagen</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Ein gutes Passwort-Hashing-Verfahren macht deshalb zwei Dinge: Es verhindert vorberechnete Tabellen (Salt) und es ist <strong>absichtlich langsam</strong> (Abschnitt 5).</p>
+      </section>
+
+      <section class="section">
+        <h2>4 — Salt &amp; Pepper</h2>
+        <h3>Salt</h3>
+        <p>
+          Ein <strong>Salt</strong> ist ein zufälliger Wert, der für <strong>jedes Passwort neu</strong> erzeugt,
+          vor dem Hashen an das Passwort angehängt und zusammen mit dem Hash gespeichert wird. Er ist nicht
+          geheim.
+        </p>
+        <ul>
+          <li>Zwei Benutzer mit demselben Passwort „hallo123“ haben trotzdem unterschiedliche Hashes.</li>
+          <li>Rainbow Tables werden nutzlos, weil man sie für jeden einzelnen Salt neu berechnen müsste.</li>
+          <li>Angreifer müssen jedes Konto einzeln angreifen statt alle gleichzeitig.</li>
+        </ul>
+        <h3>Pepper</h3>
+        <p>
+          Ein <strong>Pepper</strong> ist ein zusätzlicher geheimer Wert, der für <strong>alle</strong> Passwörter
+          gleich ist und <strong>nicht</strong> in der Datenbank liegt, sondern z.&nbsp;B. in einem Secrets
+          Manager (Lektion 2.8). Wird nur die Datenbank gestohlen, fehlt dem Angreifer der Pepper. Er ist
+          eine optionale zusätzliche Schicht (Defense in Depth), ersetzt aber kein gutes Verfahren.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th></th><th>Salt</th><th>Pepper</th></tr></thead>
+            <tbody>
+              <tr><td>Pro Passwort verschieden?</td><td>ja</td><td>nein, einer für alle</td></tr>
+              <tr><td>Geheim?</td><td>nein</td><td>ja</td></tr>
+              <tr><td>Gespeichert</td><td>neben dem Hash in der Datenbank</td><td>außerhalb der Datenbank</td></tr>
+              <tr><td>Schützt gegen</td><td>Rainbow Tables, gleiche Hashes bei gleichen Passwörtern</td><td>reinen Datenbank-Diebstahl</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>5 — Argon2, bcrypt, PBKDF2</h2>
+        <p>
+          Passwort-Hashing-Verfahren haben einen einstellbaren <strong>Work Factor</strong> (Kostenfaktor):
+          Eine Berechnung dauert z.&nbsp;B. 100&nbsp;ms. Für einen einzelnen Login ist das unmerklich, für einen
+          Angreifer, der Milliarden Kandidaten testen will, aber ein riesiges Hindernis.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Verfahren</th><th>Eigenschaften</th><th>Empfehlung</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Argon2id</strong></td><td>Sieger der Password Hashing Competition (2015); einstellbar in Rechenzeit <em>und</em> Speicherbedarf („memory-hard“) – das bremst Angriffe mit Grafikkarten stark</td><td>erste Wahl für neue Anwendungen</td></tr>
+              <tr><td><strong>scrypt</strong></td><td>ebenfalls memory-hard</td><td>gute Alternative</td></tr>
+              <tr><td><strong>bcrypt</strong></td><td>seit 1999 bewährt, in fast jeder Sprache verfügbar; Kostenfaktor einstellbar; verarbeitet nur die ersten 72 Bytes eines Passworts</td><td>solide, wenn Argon2 nicht verfügbar ist</td></tr>
+              <tr><td><strong>PBKDF2</strong></td><td>wendet eine normale Hashfunktion sehr oft hintereinander an (z.&nbsp;B. 600&nbsp;000 Iterationen); nicht memory-hard</td><td>wenn Standards wie FIPS es verlangen</td></tr>
+              <tr><td>MD5, SHA-1, SHA-256 (einfach)</td><td>schnell, ohne Work Factor</td><td><strong>nicht für Passwörter</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <ul>
+          <li>Bibliotheken für diese Verfahren erzeugen den Salt automatisch und speichern Verfahren, Parameter und Salt <strong>gemeinsam im Hash-String</strong>. Du musst dich um keine eigene Spalte kümmern.</li>
+          <li>Die Parameter werden mit der Zeit erhöht, weil Hardware schneller wird. Bei einem erfolgreichen Login kann der Server das Passwort dann mit den neuen Parametern neu hashen (<strong>Rehash</strong>).</li>
+          <li>Hash-Vergleiche erledigt die Bibliothek – selbst geschriebene Vergleiche können durch Zeitmessung angreifbar sein.</li>
+        </ul>
+        <div class="callout callout-tip">
+  <div class="callout-icon">&#128161;</div>
+  <div class="callout-body">
+    <div class="callout-title">Nichts selbst erfinden</div>
+    <p>„Doppelt SHA-256 mit einem selbstgebauten Salt“ ist kein sicheres Verfahren. Verwende die
+          fertige Argon2- oder bcrypt-Bibliothek deiner Plattform mit den empfohlenen Parametern aus dem
+          <strong>OWASP Password Storage Cheat Sheet</strong>.</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>6 — Password Policies: Regeln für Passwörter</h2>
+        <p>
+          Viele alte Regeln („Mindestens ein Sonderzeichen, alle 90 Tage ändern“) führen zu Passwörtern wie
+          „Passwort1!“, „Passwort2!“ … Die aktuellen Richtlinien des US-amerikanischen NIST
+          (SP&nbsp;800-63B) empfehlen stattdessen:
+        </p>
+        <div class="do-dont">
+          <div class="do-box">
+            <h4>DO</h4>
+            <ul>
+              <li><strong>Länge</strong> vor Komplexität: mindestens 15 Zeichen, wenn das Passwort der einzige Faktor ist; mindestens 8 bei MFA</li>
+              <li>Lange Passwörter und Passphrasen erlauben (mindestens 64 Zeichen)</li>
+              <li>Alle Zeichen inkl. Leerzeichen und Unicode erlauben</li>
+              <li>Gegen Listen geleakter und häufiger Passwörter prüfen</li>
+              <li>Einfügen erlauben, damit Passwort-Manager funktionieren</li>
+            </ul>
+          </div>
+          <div class="dont-box">
+            <h4>DON'T</h4>
+            <ul>
+              <li>Zusammensetzungsregeln erzwingen („1 Großbuchstabe, 1 Ziffer, 1 Sonderzeichen“)</li>
+              <li>Regelmäßigen Passwortwechsel ohne Anlass verlangen</li>
+              <li>Sicherheitsfragen („Name des ersten Haustiers?“)</li>
+              <li>Passwort-Hinweise, die andere lesen können</li>
+            </ul>
+          </div>
+        </div>
+        <p>Ein Wechsel wird verlangt, wenn es einen <strong>Anlass</strong> gibt – etwa wenn das Passwort in einem Leak auftaucht.</p>
+        <div class="callout callout-info">
+  <div class="callout-icon">&#8505;</div>
+  <div class="callout-body">
+    <div class="callout-title">Geleakte Passwörter prüfen</div>
+    <p>Dienste wie „Have I Been Pwned“ bieten eine Schnittstelle, mit der man prüfen kann, ob ein
+          Passwort in bekannten Leaks vorkommt. Dabei werden nur die ersten fünf Zeichen des Hashes
+          übertragen (<strong>k-Anonymity</strong>) – das Passwort selbst verlässt den Server nicht.</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>7 — Angriffe auf das Login abwehren</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Angriff</th><th>Beschreibung</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Online Brute Force</strong></td><td>Viele Passwörter für ein Konto direkt über das Login-Formular ausprobieren</td></tr>
+              <tr><td><strong>Credential Stuffing</strong></td><td>Benutzername/Passwort-Paare aus fremden Leaks automatisiert bei anderen Diensten testen</td></tr>
+              <tr><td><strong>Password Spraying</strong></td><td>Wenige sehr häufige Passwörter bei sehr vielen Konten testen – umgeht Sperren pro Konto</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><strong>Gegenmaßnahmen</strong> (kombiniert einsetzen):</p>
+        <ul>
+          <li><strong>Rate Limiting:</strong> Anzahl der Login-Versuche pro Konto und pro IP-Adresse begrenzen, Wartezeiten nach Fehlversuchen schrittweise erhöhen (mehr dazu in Lektion 2.7).</li>
+          <li><strong>Vorsicht mit Kontosperren:</strong> Wird ein Konto nach 5 Fehlversuchen dauerhaft gesperrt, können Angreifer gezielt fremde Konten sperren. Besser: zeitlich begrenzt sperren oder ein CAPTCHA verlangen.</li>
+          <li><strong>Multi-Factor Authentication</strong> macht ein erbeutetes Passwort allein wertlos (Lektion 2.3).</li>
+          <li><strong>Geleakte Passwörter</strong> bei Registrierung und Passwortänderung ablehnen.</li>
+          <li><strong>Benachrichtigung</strong> bei Login von einem neuen Gerät oder nach einer Passwortänderung.</li>
+        </ul>
+        <h3>Passwort-Reset sicher gestalten</h3>
+        <ul>
+          <li>Ein zufälliger, nicht erratbarer Reset-Link wird per E-Mail geschickt.</li>
+          <li>Der Link ist kurz gültig (z.&nbsp;B. 30&nbsp;Minuten) und nur <strong>einmal</strong> verwendbar.</li>
+          <li>Nach dem Reset werden bestehende Sessions beendet.</li>
+        </ul>
+      </section>
+
+      <section class="section section-fehler">
+        <h2>Häufige Fehler</h2>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: Schneller Hash ohne Salt</div>
+  <p>Passwörter werden mit SHA-256 gehasht. Nach einem Leak sind die meisten Hashes innerhalb von Stunden geknackt, gleiche Passwörter erkennt man sofort an gleichen Hashes.</p>
+          <p class="fehler-fix">Ein Passwort-Hashing-Verfahren mit Salt und Work Factor verwenden: Argon2id, ersatzweise bcrypt.</p>
+</div>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: Verräterische Fehlermeldungen</div>
+  <p>Das Login meldet „Diese E-Mail-Adresse ist nicht registriert“. Angreifer erstellen damit eine Liste gültiger Konten für Credential Stuffing.</p>
+          <p class="fehler-fix">Bei Login, Registrierung und Passwort-Reset neutrale, einheitliche Meldungen ausgeben.</p>
+</div>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: Passwort im Log</div>
+  <p>Zur Fehlersuche wird jeder Request protokolliert – inklusive Login-Daten. Wer Zugriff auf die Logs hat, kennt alle Passwörter.</p>
+          <p class="fehler-fix">Sensible Felder (Passwörter, Tokens) vor dem Protokollieren entfernen oder maskieren.</p>
+</div>
+      </section>
+
+      <section class="section section-aufgaben">
+        <h2>Aufgaben</h2>
+        <div class="aufgaben-list">
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 1</span>
+    <span class="aufgabe-title">Passwortregeln vergleichen</span>
+  </div>
+  <p>Registriere dich gedanklich bei drei Diensten deiner Wahl (oder lies deren Hilfeseiten). Notiere die jeweiligen Passwortregeln und vergleiche sie mit den Empfehlungen aus Abschnitt 6. Welcher Dienst ist am nächsten an den aktuellen Empfehlungen?</p>
+</div>
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 2</span>
+    <span class="aufgabe-title">Ablauf zeichnen</span>
+  </div>
+  <p>Zeichne als Sequenzdiagramm die drei Abläufe Registrierung, Login und Passwort-Reset. Markiere, an welchen Stellen das Passwort im Klartext existiert und wo nur noch der Hash.</p>
+</div>
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 3</span>
+    <span class="aufgabe-title">Code-Review ohne Code</span>
+  </div>
+  <p>Ein Kollege beschreibt sein Konzept: „Ich verschlüssele die Passwörter mit AES, der Schlüssel steht in der Konfigurationsdatei. Bei ‚Passwort vergessen‘ schicke ich dem Benutzer sein Passwort per Mail.“ Nenne alle Probleme und schlage eine bessere Lösung vor.</p>
+</div>
+          <div class="aufgabe aufgabe-bonus">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Bonus</span>
+    <span class="aufgabe-title">Brute Force rechnen</span>
+  </div>
+  <p>Ein Passwort besteht aus 8 Kleinbuchstaben (26 Möglichkeiten pro Stelle). Wie lange dauert es im schlimmsten Fall, alle Kombinationen zu testen, (a) bei 10 Milliarden SHA-256-Hashes pro Sekunde, (b) bei 10 Argon2-Hashes pro Sekunde? Wiederhole die Rechnung für eine Passphrase aus 4 zufälligen Wörtern aus einer Liste von 7776 Wörtern.</p>
+</div>
+        </div>
+      </section>
+
+      <section class="section section-quiz">
+        <h2>Wissenskontrolle</h2>
+        <div class="quiz" id="quiz-1">
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 1</span> Warum werden Passwörter gehasht und nicht verschlüsselt gespeichert?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Weil Hashes weniger Speicherplatz brauchen</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-1"> <span>Weil Verschlüsselung umkehrbar ist – wer den Schlüssel erbeutet, kann alle Passwörter lesen</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Weil Verschlüsselung über HTTPS nicht erlaubt ist</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Weil man Hashes bei „Passwort vergessen“ zurückrechnen kann</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Ein Hash ist eine Einwegfunktion: Der Server muss das Passwort nie wieder kennen, er vergleicht nur Hashes. Verschlüsselte Passwörter sind dagegen mit dem Schlüssel wiederherstellbar – und der liegt meist auf demselben Server. Hashes lassen sich gerade <em>nicht</em> zurückrechnen; deshalb gibt es einen Reset statt einer Passwort-Erinnerung.</div>
+  </div>
+  <div class="quiz-frage" data-multi="1">
+    <p class="quiz-q"><span class="quiz-num">Frage 2</span> Wogegen schützt ein <strong>Salt</strong>?</p>
+    <p class="quiz-hint">Mehrere Antworten sind richtig.</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-2"> <span>Gegen Rainbow Tables, also vorberechnete Tabellen von Hash zu Passwort</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-2"> <span>Dagegen, dass gleiche Passwörter zu gleichen Hashes führen</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-2"> <span>Gegen schwache Passwörter wie „123456“</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-2"> <span>Gegen das Mitlesen des Passworts bei der Übertragung</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Durch den zufälligen Salt pro Passwort ist jeder Hash einzigartig; vorberechnete Tabellen helfen nicht mehr. Ein schwaches Passwort wird durch Salt aber nicht stark – es wird trotzdem schnell durch Ausprobieren gefunden. Die Übertragung schützt HTTPS.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 3</span> Welches Verfahren ist für neue Anwendungen die erste Wahl zum Speichern von Passwörtern?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>SHA-256</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>MD5 mit Salt</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-3"> <span>Argon2id</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>AES-256</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Argon2id ist absichtlich langsam und speicherintensiv, beides einstellbar. SHA-256 und MD5 sind zu schnell (MD5 zudem gebrochen), AES ist ein Verschlüsselungsverfahren und damit umkehrbar.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 4</span> Was unterscheidet einen <strong>Pepper</strong> von einem Salt?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Der Pepper wird für jedes Passwort neu erzeugt</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-4"> <span>Der Pepper ist geheim und wird außerhalb der Datenbank gespeichert</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Der Pepper ersetzt das Hashing-Verfahren</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Der Pepper wird im Cookie des Benutzers gespeichert</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Der Salt ist pro Passwort verschieden und öffentlich (neben dem Hash gespeichert). Der Pepper ist ein gemeinsames Geheimnis außerhalb der Datenbank, z.&nbsp;B. in einem Secrets Manager. Er ist eine Zusatzschicht, kein Ersatz für Argon2 oder bcrypt.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 5</span> Welche Passwortregel entspricht den aktuellen NIST-Empfehlungen?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span>Alle 90 Tage muss das Passwort geändert werden</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span>Das Passwort muss Groß- und Kleinbuchstaben, Ziffern und Sonderzeichen enthalten</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-5"> <span>Lange Passwörter erlauben und gegen Listen geleakter Passwörter prüfen</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span>Einfügen in das Passwortfeld verbieten</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> NIST empfiehlt Länge statt erzwungener Komplexität, keine Wechsel ohne Anlass und eine Prüfung gegen bekannte Leaks. Einfügen zu verbieten behindert Passwort-Manager und führt zu schwächeren Passwörtern.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 6</span> Angreifer testen Zugangsdaten aus dem Leak eines Gaming-Forums automatisiert bei einem Online-Shop. Wie heißt dieser Angriff?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span>Password Spraying</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-6"> <span>Credential Stuffing</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span>Rainbow-Table-Angriff</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span>Session Hijacking</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Credential Stuffing nutzt aus, dass viele Menschen dasselbe Passwort bei mehreren Diensten verwenden. Beim Password Spraying werden dagegen wenige häufige Passwörter bei vielen Konten probiert. Wirksam dagegen sind MFA, Rate Limiting und das Ablehnen geleakter Passwörter.</div>
+  </div>
+  <div class="quiz-summary"><span class="quiz-score"></span><button type="button" class="quiz-reset">Zur&uuml;cksetzen</button></div>
+</div>
+      </section>
+
+    </div>
+
+    <nav class="lesson-nav">
+      <a class="nav-btn" href="1.1-grundlagen.html">&larr; Lektion 1.1: Grundlagen der Web-Security</a>
+      <span class="nav-center-info">Lektion 1.2</span>
+      <a class="nav-btn primary" href="1.3-sessions-cookies.html">Lektion 1.3: Sessions &amp; Cookies &rarr;</a>
+    </nav>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>
+    const ham = document.getElementById('hamburger');
+    const sb = document.getElementById('sidebar');
+    const ov = document.getElementById('overlay');
+    ham.addEventListener('click', () => { sb.classList.toggle('open'); ov.classList.toggle('visible'); });
+    ov.addEventListener('click', () => { sb.classList.remove('open'); ov.classList.remove('visible'); });
+    const cur = window.location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.nav-link').forEach(l => {
+      if (l.getAttribute('href') === cur) l.classList.add('active');
+    });
+    const themeBtn = document.getElementById('theme-toggle');
+    const applyTheme = (t) => {
+      document.documentElement.setAttribute('data-theme', t);
+      if (themeBtn) themeBtn.innerHTML = t === 'dark' ? '&#9728;' : '&#9790;';
+    };
+    applyTheme(localStorage.getItem('kurs-theme') || 'dark');
+    setTimeout(() => document.documentElement.classList.add('theme-transitions'), 50);
+    if (themeBtn) themeBtn.addEventListener('click', () => {
+      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('kurs-theme', next);
+      applyTheme(next);
+    });
+    hljs.highlightAll();
+  </script>
+  <script>
+    document.querySelectorAll('.quiz').forEach((quiz) => {
+      const fragen = [...quiz.querySelectorAll('.quiz-frage')];
+      const score = quiz.querySelector('.quiz-score');
+      const update = () => {
+        const done = fragen.filter((f) => f.dataset.state).length;
+        const ok = fragen.filter((f) => f.dataset.state === 'ok').length;
+        score.textContent = done === 0
+          ? fragen.length + ' Fragen – wähle eine Antwort und prüfe sie.'
+          : ok + ' von ' + fragen.length + ' richtig'
+            + (done < fragen.length ? ' (' + done + ' von ' + fragen.length + ' bearbeitet)' : '');
+      };
+      fragen.forEach((f) => {
+        const inputs = [...f.querySelectorAll('input')];
+        const check = f.querySelector('.quiz-check');
+        const reveal = f.querySelector('.quiz-reveal');
+        const fb = f.querySelector('.quiz-feedback');
+        const exp = f.querySelector('.quiz-erklaerung');
+        inputs.forEach((i) => i.addEventListener('change', () => {
+          check.disabled = !inputs.some((x) => x.checked);
+        }));
+        const finish = (graded) => {
+          let allOk = true;
+          f.querySelectorAll('.quiz-opt').forEach((li) => {
+            const input = li.querySelector('input');
+            const corr = li.dataset.correct === '1';
+            if (corr !== input.checked) allOk = false;
+            if (corr) li.classList.add('opt-correct');
+            else if (input.checked) li.classList.add('opt-wrong');
+            input.disabled = true;
+          });
+          f.dataset.state = !graded ? 'shown' : (allOk ? 'ok' : 'wrong');
+          fb.className = 'quiz-feedback fb-' + f.dataset.state;
+          fb.textContent = !graded ? 'Lösung angezeigt.'
+            : (allOk ? '✔ Richtig!' : '✘ Leider nicht ganz – die richtige Lösung ist markiert.');
+          fb.hidden = false;
+          exp.hidden = false;
+          check.disabled = true;
+          reveal.disabled = true;
+          update();
+        };
+        check.addEventListener('click', () => finish(true));
+        reveal.addEventListener('click', () => finish(false));
+      });
+      quiz.querySelector('.quiz-reset').addEventListener('click', () => {
+        fragen.forEach((f) => {
+          delete f.dataset.state;
+          f.querySelectorAll('.quiz-opt').forEach((li) => li.classList.remove('opt-correct', 'opt-wrong'));
+          f.querySelectorAll('input').forEach((i) => { i.checked = false; i.disabled = false; });
+          f.querySelector('.quiz-check').disabled = true;
+          f.querySelector('.quiz-reveal').disabled = false;
+          f.querySelector('.quiz-feedback').hidden = true;
+          f.querySelector('.quiz-erklaerung').hidden = true;
+        });
+        update();
+      });
+      update();
+    });
+  </script>
+</body>
+
+</html>

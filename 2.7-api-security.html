@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<!-- GENERIERT von kurse/_build (web_security) – nicht direkt bearbeiten!
+     Quelle: kurse/_build/web_security/lessons/, bauen: python3 _build/build.py web_security -->
+<html lang="de">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2.7 &ndash; API Security | Web Security &amp; Identity Kurs</title>
+  <script>(function () { var t = localStorage.getItem('kurs-theme') || 'dark'; document.documentElement.setAttribute('data-theme', t); })();</script>
+  <link rel="stylesheet" href="assets/kurs.css">
+  <link rel="stylesheet" id="hljs-theme"
+    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+
+<body>
+
+  <button class="hamburger" id="hamburger" aria-label="Navigation &ouml;ffnen">&#9776;</button>
+  <div class="sidebar-overlay" id="overlay"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <a href="index.html">
+        <span class="brand-icon">&#128274;</span>
+        <div>
+          <div class="brand-name">Web Security</div>
+          <div class="brand-sub">Web- und Mobile Computing</div>
+        </div>
+      </a>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Dark/Light Mode"
+        title="Theme wechseln">&#9728;</button>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group">
+        <div class="nav-group-label sec-label">Teil 1 &mdash; Konzepte</div>
+        <a class="nav-link" href="1.1-grundlagen.html"><span class="ln">1.1</span>Grundlagen der Web-Security</a>
+        <a class="nav-link" href="1.2-passwoerter.html"><span class="ln">1.2</span>Passwörter sicher speichern</a>
+        <a class="nav-link" href="1.3-sessions-cookies.html"><span class="ln">1.3</span>Sessions &amp; Cookies</a>
+        <a class="nav-link" href="1.4-jwt-tokens.html"><span class="ln">1.4</span>JWT &amp; Token-basierte Authentifizierung</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label secdev-label">Teil 2 &mdash; Umsetzung mit Next.js</div>
+        <a class="nav-link" href="2.1-login-sessions.html"><span class="ln">2.1</span>Login &amp; Sessions in Next.js</a>
+        <a class="nav-link" href="2.2-oauth-oidc-sso.html"><span class="ln">2.2</span>OAuth 2.0, OpenID Connect &amp; SSO</a>
+        <a class="nav-link" href="2.3-mfa-passkeys.html"><span class="ln">2.3</span>MFA, TOTP &amp; Passkeys</a>
+        <a class="nav-link" href="2.4-access-control.html"><span class="ln">2.4</span>Authorization &amp; Access Control</a>
+        <a class="nav-link" href="2.5-injection.html"><span class="ln">2.5</span>Injection &amp; unsichere Eingaben</a>
+        <a class="nav-link" href="2.6-xss-csrf.html"><span class="ln">2.6</span>XSS, CSRF &amp; Clickjacking</a>
+        <a class="nav-link" href="2.7-api-security.html"><span class="ln">2.7</span>API Security</a>
+        <a class="nav-link" href="2.8-secure-development.html"><span class="ln">2.8</span>Secure Development &amp; OWASP</a>
+      </div>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <header class="lesson-header">
+      <p class="lesson-eyebrow">Lektion 2.7 &mdash; Teil 2: Umsetzung mit Next.js</p>
+      <h1>API Security</h1>
+      <div class="lesson-tags">
+        <span class="tag tag-secdev">API</span>
+        <span class="tag tag-time">ca. 60 min</span>
+        <span class="tag tag-level">Fortgeschritten</span>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <section class="section section-lernziele">
+        <h2>Lernziele</h2>
+        <ul class="lernziele-list">
+          <li>Besondere Risiken von APIs anhand der OWASP API Security Top 10 benennen</li>
+          <li>API Keys und Bearer Tokens als Authentifizierung für APIs vergleichen</li>
+          <li>Requests validieren und Antworten auf das Nötige beschränken</li>
+          <li>Rate Limiting begründen und gestalten</li>
+          <li>CORS korrekt einordnen und typische Fehlkonfigurationen erkennen</li>
+          <li>Sichere Fehlerbehandlung umsetzen sowie SSRF und Open Redirects verhindern</li>
+                  <li>API Keys, JWT-Validierung mit <code>jose</code>, Rate Limiting, CORS und sichere Fehlerbehandlung in Route Handlers umsetzen</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>1 — Was ist bei APIs anders?</h2>
+        <p>
+          REST-APIs sind das Rückgrat moderner Web- und Mobile-Apps. Für Angreifer sind sie besonders
+          attraktiv:
+        </p>
+        <ul>
+          <li>Sie sind <strong>direkt aufrufbar</strong> – ohne Frontend, das irgendetwas einschränkt.</li>
+          <li>Sie sind oft <strong>dokumentiert</strong> (OpenAPI/Swagger) oder lassen sich in den DevTools beobachten.</li>
+          <li>Sie liefern <strong>Rohdaten</strong> in großen Mengen und sind leicht zu automatisieren.</li>
+        </ul>
+        <p>OWASP führt dafür eine eigene Liste, die <strong>OWASP API Security Top 10</strong>. Die ersten Plätze kennst du schon:</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Risiko (Auswahl, Stand 2023)</th><th>Im Kurs</th></tr></thead>
+            <tbody>
+              <tr><td>API1 Broken Object Level Authorization (BOLA = IDOR bei APIs)</td><td>2.4</td></tr>
+              <tr><td>API2 Broken Authentication</td><td>1.2–1.4, 2.1–2.3, Abschnitt 2</td></tr>
+              <tr><td>API3 Broken Object Property Level Authorization (Mass Assignment, zu viele Daten in Antworten)</td><td>2.4, Abschnitt 3</td></tr>
+              <tr><td>API4 Unrestricted Resource Consumption</td><td>Abschnitt 4</td></tr>
+              <tr><td>API5 Broken Function Level Authorization</td><td>2.4, Abschnitt 8</td></tr>
+              <tr><td>API7 Server-Side Request Forgery</td><td>Abschnitt 7</td></tr>
+              <tr><td>API8 Security Misconfiguration</td><td>Abschnitt 5, 2.8</td></tr>
+              <tr><td>API9 Improper Inventory Management</td><td>Abschnitt 8</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>2 — REST API Authentication: API Keys und Bearer Tokens</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th></th><th>API Key</th><th>Bearer Token (OAuth Access Token / JWT)</th></tr></thead>
+            <tbody>
+              <tr><td>Identifiziert</td><td>eine <strong>Anwendung</strong> oder ein Projekt</td><td>einen <strong>Benutzer</strong> (oder Dienst) mit bestimmten Rechten</td></tr>
+              <tr><td>Lebensdauer</td><td>lang, bis zur Rotation</td><td>kurz (Minuten), erneuerbar</td></tr>
+              <tr><td>Typischer Einsatz</td><td>Server-zu-Server, öffentliche Daten-APIs (Wetter, Karten), Abrechnung nach Nutzung</td><td>Benutzer-Anfragen aus Web- und Mobile-Apps</td></tr>
+              <tr><td>Übertragung</td><td>in einem Header (nie in der URL – landet in Logs)</td><td>Header <code>Authorization: Bearer …</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <ul>
+          <li><strong>API Keys</strong> sind Secrets: nicht in Frontend- oder App-Code, nicht ins Repository (Lektion 2.8). Pro Anwendung ein eigener Key mit eingeschränkten Rechten; rotierbar; am Server nur gehasht speichern.</li>
+          <li><strong>Bearer Tokens</strong> bei jeder Anfrage vollständig validieren – Signatur, Algorithmus, <code>exp</code>, <code>iss</code>, <code>aud</code> (Lektion 1.4) – und anschließend <strong>Scopes und Berechtigungen</strong> prüfen.</li>
+          <li>Ein Token für API A darf von API B nicht akzeptiert werden (<code>aud</code>!).</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>3 — Request Validation und schlanke Antworten</h2>
+        <p>Eine API weiß genau, welche Daten sie erwartet – das sollte sie auch durchsetzen:</p>
+        <ul>
+          <li><strong>Schema-Validierung:</strong> Jeder Request-Body wird gegen ein Schema geprüft (Typen, Pflichtfelder, Längen, Wertebereiche, Formate). Das Schema kann aus der OpenAPI-Beschreibung stammen.</li>
+          <li><strong>Unbekannte Felder ablehnen</strong> – das verhindert Mass Assignment (Lektion 2.4).</li>
+          <li><strong>Größen begrenzen:</strong> maximale Body-Größe, maximale Länge von Arrays, maximale Seitengröße bei Listen.</li>
+          <li><strong>Content-Type prüfen:</strong> Ein JSON-Endpunkt akzeptiert nur <code>application/json</code>.</li>
+          <li>Ungültige Anfragen mit <strong>400 Bad Request</strong> (bzw. 422) und einer allgemeinen Beschreibung des Fehlers ablehnen.</li>
+        </ul>
+        <p>
+          Ebenso wichtig ist die Gegenrichtung: Die API gibt nicht einfach das Datenbankobjekt zurück, sondern
+          nur die Felder, die der Empfänger sehen darf (<strong>Excessive Data Exposure</strong> vermeiden). Ein
+          Frontend, das „nur den Namen anzeigt“, schützt keine Daten, die trotzdem in der Antwort stehen.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>4 — API Rate Limiting</h2>
+        <p>
+          Ohne Begrenzung kann ein einzelner Client eine API mit Anfragen überfluten, Passwörter durchprobieren,
+          die gesamte Datenbank seitenweise abziehen oder teure Funktionen missbrauchen (z.&nbsp;B. tausende SMS
+          auf Kosten des Betreibers verschicken). <strong>Rate Limiting</strong> begrenzt die Anzahl der Anfragen
+          pro Zeiteinheit.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Begrenzen pro …</th><th>Beispiel</th></tr></thead>
+            <tbody>
+              <tr><td>Benutzer / API Key</td><td>1000 Anfragen pro Stunde</td></tr>
+              <tr><td>IP-Adresse</td><td>für nicht angemeldete Endpunkte wie Login und Registrierung</td></tr>
+              <tr><td>Endpunkt</td><td>Login: 5 Versuche pro Minute; „SMS-Code senden“: 3 pro Stunde</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <ul>
+          <li>Wird das Limit überschritten, antwortet die API mit <strong>429 Too Many Requests</strong> und dem Header <code>Retry-After</code>.</li>
+          <li>Zusätzlich gegen <strong>Unrestricted Resource Consumption</strong>: Timeouts, maximale Upload-Größe, Paginierung mit Obergrenze, Begrenzung teurer Abfragen.</li>
+          <li>Rate Limiting wird oft vorgelagert in einem <strong>API Gateway</strong> oder Reverse Proxy umgesetzt – die Logik, welche Grenzen sinnvoll sind, gehört aber zum Entwurf der API.</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>5 — CORS (Cross-Origin Resource Sharing)</h2>
+        <p>
+          Wegen der Same-Origin Policy (Lektion 2.6) darf JavaScript auf <code>https://app.shop.example</code>
+          die Antworten von <code>https://api.shop.example</code> zunächst nicht lesen – es ist eine andere
+          Origin. Mit <strong>CORS</strong> kann der API-Server dem Browser per Response-Header erlauben, dass
+          bestimmte fremde Origins seine Antworten lesen dürfen. Die Grundlagen kennst du aus dem
+          JavaScript-Kurs (Lektion 3.3).
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Header</th><th>Bedeutung</th></tr></thead>
+            <tbody>
+              <tr><td><code>Access-Control-Allow-Origin</code></td><td>welche Origin die Antwort lesen darf (eine konkrete Origin oder <code>*</code>)</td></tr>
+              <tr><td><code>Access-Control-Allow-Credentials: true</code></td><td>Cookies dürfen mitgeschickt und die Antwort trotzdem gelesen werden – nur zusammen mit einer konkreten Origin erlaubt</td></tr>
+              <tr><td><code>Access-Control-Allow-Methods</code> / <code>-Headers</code></td><td>erlaubte Methoden und Header; werden bei einer vorab gesendeten <strong>Preflight</strong>-Anfrage (<code>OPTIONS</code>) abgefragt</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout callout-warning">
+  <div class="callout-icon">&#9888;</div>
+  <div class="callout-body">
+    <div class="callout-title">Was CORS nicht ist</div>
+    <p>CORS ist <strong>kein</strong> Zugriffsschutz für die API. Es lockert nur eine Einschränkung des
+          Browsers. Postman, curl oder ein anderer Server rufen die API ohnehin ohne CORS auf –
+          Authentifizierung und Autorisierung sind trotzdem nötig.</p>
+  </div>
+</div>
+        <h3>Typische Fehlkonfigurationen</h3>
+        <ul>
+          <li><strong>Origin spiegeln:</strong> Der Server übernimmt den mitgeschickten <code>Origin</code>-Header ungeprüft in <code>Access-Control-Allow-Origin</code> und erlaubt Credentials. Dann kann jede Website im Namen angemeldeter Benutzer Daten lesen.</li>
+          <li><strong>Unscharfe Prüfung:</strong> „Endet auf <code>shop.example</code>“ akzeptiert auch <code>evilshop.example</code>.</li>
+          <li><strong>Origin <code>null</code> erlauben:</strong> Diesen Wert können Angreifer z.&nbsp;B. über Sandbox-Frames erzeugen.</li>
+        </ul>
+        <p>Richtig: eine feste <strong>Allowlist</strong> exakt angegebener Origins.</p>
+      </section>
+
+      <section class="section">
+        <h2>6 — Secure Error Handling</h2>
+        <p>
+          Fehlermeldungen sind für Angreifer eine Informationsquelle: Stacktraces verraten Framework,
+          Versionen und Dateipfade, Datenbankfehler die Tabellenstruktur, unterschiedliche Meldungen die
+          Existenz von Konten (Lektion 1.2).
+        </p>
+        <div class="do-dont">
+          <div class="do-box">
+            <h4>DO</h4>
+            <ul>
+              <li>Allgemeine Meldung an den Client, Details nur ins interne Log</li>
+              <li>Eine <strong>Fehler-ID</strong> (Correlation ID) zurückgeben, mit der der Support den Log-Eintrag findet</li>
+              <li>Einheitliches Fehlerformat und passende Statuscodes</li>
+              <li>Im Fehlerfall Zugriff verweigern (<strong>Fail Securely</strong>)</li>
+            </ul>
+          </div>
+          <div class="dont-box">
+            <h4>DON'T</h4>
+            <ul>
+              <li>Stacktraces oder SQL-Fehlermeldungen ausliefern</li>
+              <li>Debug-Modus in Produktion</li>
+              <li>Fehler „verschlucken“ und mit halbfertigem Zustand weitermachen</li>
+              <li>Bei einer Ausnahme in der Berechtigungsprüfung den Zugriff erlauben</li>
+            </ul>
+          </div>
+        </div>
+        <p>Der letzte Punkt ist Kern der OWASP-Kategorie <strong>Mishandling of Exceptional Conditions</strong>: Wenn z.&nbsp;B. der Berechtigungsdienst nicht erreichbar ist, muss die Anfrage abgelehnt werden, nicht durchgewunken.</p>
+      </section>
+
+      <section class="section">
+        <h2>7 — Server-Side Request Forgery und Open Redirect</h2>
+        <h3>SSRF</h3>
+        <p>
+          Viele Anwendungen laden Inhalte von einer URL, die der Benutzer angibt: Link-Vorschauen, „Bild von
+          URL importieren“, Webhooks, PDF-Erzeugung aus einer Webseite. Bei <strong>Server-Side Request
+          Forgery</strong> gibt der Angreifer eine <strong>interne</strong> Adresse an, die nur der Server
+          erreichen kann – etwa eine Admin-Oberfläche im internen Netz, eine Datenbank-Schnittstelle oder den
+          Metadaten-Dienst einer Cloud-Plattform, der Zugangsdaten herausgibt.
+        </p>
+        <ul>
+          <li>Ziele per <strong>Allowlist</strong> erlauben (nur bestimmte Domains), nicht per Denylist.</li>
+          <li>Nur <code>http</code>/<code>https</code> zulassen; private und lokale Adressbereiche blockieren – und zwar nach der DNS-Auflösung, sonst zeigt eine harmlose Domain auf eine interne IP.</li>
+          <li>Weiterleitungen beim Abruf nicht automatisch folgen.</li>
+          <li>Die Antwort nicht ungefiltert an den Benutzer zurückgeben.</li>
+        </ul>
+        <h3>Open Redirect</h3>
+        <p>
+          Nach dem Login leitet eine Anwendung auf die Adresse im Parameter <code>next</code> weiter. Ein
+          Angreifer verschickt einen Link zur echten Login-Seite mit <code>next=https://evil.example</code>.
+          Das Opfer vertraut der echten Domain, meldet sich an – und landet auf einer Phishing-Seite. In
+          OAuth-Abläufen können über offene Weiterleitungen sogar Codes oder Tokens abfließen (Lektion 2.2).
+        </p>
+        <p><strong>Schutz:</strong> nur relative Pfade innerhalb der eigenen Anwendung oder Ziele aus einer festen Allowlist zulassen.</p>
+      </section>
+
+      <section class="section">
+        <h2>8 — API Permissions und Inventar</h2>
+        <ul>
+          <li>Jeder Endpunkt hat eine <strong>definierte Berechtigung</strong> auf Funktionsebene; Objektzugriffe werden zusätzlich auf Ressourcenebene geprüft (Lektion 2.4). Admin-Endpunkte liegen nicht nur unter einem „geheimen“ Pfad.</li>
+          <li>Auch <strong>andere Methoden</strong> prüfen: Wer <code>GET /users/42</code> darf, darf nicht automatisch <code>DELETE /users/42</code>.</li>
+          <li>Ein aktuelles <strong>Inventar</strong> aller APIs und Versionen führen. Alte Versionen (<code>/v1/</code>), Test- und Debug-Endpunkte sind häufig vergessen und ungeschützt – abschalten, was nicht mehr gebraucht wird.</li>
+          <li>Daten aus <strong>fremden APIs</strong> ebenso validieren wie Benutzereingaben – auch Partner können kompromittiert sein.</li>
+        </ul>
+      </section>
+
+            <section class="section">
+        <h2>9 — Umsetzung: eine Partner-API für das FlugBoard</h2>
+        <p>
+          Flughäfen sollen die Abflüge auf eigenen Anzeigetafeln darstellen (Lesen mit API Key), ein
+          Airline-Backend soll neue Flüge eintragen können (Schreiben mit OAuth Access Token). Wir bauen dafür
+          die Route <code>/api/v1/flights</code> und mehrere kleine Hilfsmodule.
+        </p>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">Terminal</span>
+    <span class="code-lang">Bash</span>
+  </div>
+  <pre><code class="language-bash">npm install jose</code></pre>
+</div>
+        <h3>API Keys</h3>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/db/schema.ts (Ergänzung)</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">export const apiKeys = sqliteTable('api_keys', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(), // wofür ist der Key?
+  keyHash: text('key_hash').notNull().unique(), // nur der SHA-256-Hash
+  scopes: text('scopes', { mode: 'json' }).$type&lt;string[]&gt;().notNull(),
+});</code></pre>
+</div>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/lib/api-keys.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import { createHash, randomBytes } from 'node:crypto';
+
+import { eq } from 'drizzle-orm';
+
+import { db } from '@/db';
+import { apiKeys } from '@/db/schema';
+
+const hash = (key: string) =&gt; createHash('sha256').update(key).digest('hex');
+
+/** Erzeugt einen neuen Key. Der Klartext wird genau einmal angezeigt. */
+export async function createApiKey(name: string, scopes: string[]): Promise&lt;string&gt; {
+  const key = `fb_${randomBytes(32).toString('base64url')}`;
+  await db.insert(apiKeys).values({ name, keyHash: hash(key), scopes });
+  return key;
+}
+
+/** Prüft den Header "X-API-Key" und liefert die Scopes oder null. */
+export function verifyApiKey(request: Request): string[] | null {
+  const key = request.headers.get('x-api-key');
+  if (!key) return null;
+  const row = db.select({ scopes: apiKeys.scopes }).from(apiKeys)
+    .where(eq(apiKeys.keyHash, hash(key))).get();
+  return row?.scopes ?? null;
+}</code></pre>
+</div>
+        <p>Der Präfix <code>fb_</code> macht Keys erkennbar – Secret-Scanner (Lektion 2.8) finden sie so leichter, falls sie versehentlich in einem Repository landen.</p>
+
+        <h3>Bearer Tokens mit jose prüfen</h3>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/lib/bearer.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import { createRemoteJWKSet, type JWTPayload, jwtVerify } from 'jose';
+
+// Öffentliche Schlüssel des Identity Providers (beim ersten Aufruf geladen, dann gecacht)
+let jwks: ReturnType&lt;typeof createRemoteJWKSet&gt; | undefined;
+
+/** Prüft "Authorization: Bearer &lt;JWT&gt;" vollständig – oder liefert null. */
+export async function verifyBearer(request: Request, requiredScope: string): Promise&lt;JWTPayload | null&gt; {
+  const header = request.headers.get('authorization') ?? '';
+  const [scheme, token] = header.split(' ');
+  if (scheme !== 'Bearer' || !token) return null;
+
+  jwks ??= createRemoteJWKSet(new URL(process.env.OIDC_JWKS_URL!));
+  try {
+    const { payload } = await jwtVerify(token, jwks, {
+      issuer: process.env.OIDC_ISSUER, // iss
+      audience: 'https://api.flugboard.example', // aud: genau diese API
+      algorithms: ['RS256'], // fest vorgegeben, nicht aus dem Token
+    }); // exp und nbf prüft jwtVerify automatisch
+    const scopes = typeof payload.scope === 'string' ? payload.scope.split(' ') : [];
+    return scopes.includes(requiredScope) ? payload : null;
+  } catch {
+    return null; // ungültige Signatur, abgelaufen, falscher Aussteller …
+  }
+}</code></pre>
+</div>
+        <p>Das ist die Validierungs-Checkliste aus Lektion 1.4 als Code: Signatur über die öffentlichen Schlüssel (JWKS), fester Algorithmus, <code>iss</code>, <code>aud</code>, <code>exp</code> – und zusätzlich der Scope.</p>
+
+        <h3>Rate Limiting, CORS und Fehlerbehandlung</h3>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/lib/rate-limit.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">// Einfaches Fixed-Window-Rate-Limiting im Arbeitsspeicher.
+// Reicht für EINEN Server-Prozess (wie im React-Kurs, Lektion 3.6);
+// bei mehreren Instanzen braucht es einen gemeinsamen Speicher wie Redis.
+const windows = new Map&lt;string, { count: number; resetAt: number }&gt;();
+
+export function rateLimit(key: string, limit: number, windowMs: number) {
+  const now = Date.now();
+  const entry = windows.get(key);
+
+  if (!entry || entry.resetAt &lt;= now) {
+    windows.set(key, { count: 1, resetAt: now + windowMs });
+    return { ok: true, retryAfter: 0 };
+  }
+  entry.count += 1;
+  return {
+    ok: entry.count &lt;= limit,
+    retryAfter: Math.ceil((entry.resetAt - now) / 1000), // Sekunden
+  };
+}</code></pre>
+</div>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/lib/cors.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">// Allowlist exakter Origins – niemals den Origin-Header ungeprüft spiegeln
+const ALLOWED_ORIGINS = new Set(['https://anzeige.flughafen.example']);
+
+export function corsHeaders(request: Request): Record&lt;string, string&gt; {
+  const origin = request.headers.get('origin');
+  if (!origin || !ALLOWED_ORIGINS.has(origin)) return {};
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'GET, POST',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-API-Key',
+    Vary: 'Origin', // Antwort hängt vom Origin ab (wichtig für Caches)
+  };
+}</code></pre>
+</div>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/lib/api-error.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import { randomUUID } from 'node:crypto';
+
+import { NextResponse } from 'next/server';
+
+type Handler = (request: Request) =&gt; Promise&lt;Response&gt;;
+
+/** Fängt unerwartete Fehler ab: Details ins Log, allgemeine Meldung an den Client. */
+export function withErrorHandling(handler: Handler): Handler {
+  return async (request) =&gt; {
+    try {
+      return await handler(request);
+    } catch (error) {
+      const errorId = randomUUID();
+      console.error(JSON.stringify({ errorId, url: request.url, error: String(error) }));
+      return NextResponse.json(
+        { error: 'Interner Fehler', errorId }, // kein Stacktrace, keine SQL-Details
+        { status: 500 },
+      );
+    }
+  };
+}</code></pre>
+</div>
+
+        <h3>Die Route</h3>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/app/api/v1/flights/route.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import { NextResponse } from 'next/server';
+import { z } from 'zod';
+
+import { db } from '@/db';
+import { flights } from '@/db/schema';
+import { verifyApiKey } from '@/lib/api-keys';
+import { withErrorHandling } from '@/lib/api-error';
+import { verifyBearer } from '@/lib/bearer';
+import { corsHeaders } from '@/lib/cors';
+import { rateLimit } from '@/lib/rate-limit';
+
+// Preflight-Anfrage des Browsers (CORS)
+export async function OPTIONS(request: Request) {
+  return new NextResponse(null, { status: 204, headers: corsHeaders(request) });
+}
+
+// GET /api/v1/flights – für Partner-Anzeigetafeln mit API Key
+export const GET = withErrorHandling(async (request) =&gt; {
+  const scopes = verifyApiKey(request);
+  if (!scopes?.includes('flights:read')) {
+    return NextResponse.json({ error: 'Ungültiger API Key' }, { status: 401 });
+  }
+
+  const limit = rateLimit(`key:${request.headers.get('x-api-key')}`, 600, 60 * 60 * 1000);
+  if (!limit.ok) {
+    return NextResponse.json({ error: 'Zu viele Anfragen' },
+      { status: 429, headers: { 'Retry-After': String(limit.retryAfter) } });
+  }
+
+  // nur die öffentlich gedachten Felder ausgeben
+  const rows = db.select({
+    flightNumber: flights.flightNumber,
+    airport: flights.airport,
+    scheduledTime: flights.scheduledTime,
+  }).from(flights).limit(200).all();
+  return NextResponse.json(rows, { headers: corsHeaders(request) });
+});
+
+// Request Validation: Typen, Längen, Formate – unbekannte Felder werden abgelehnt
+const newFlightSchema = z.strictObject({
+  flightNumber: z.string().regex(/^[A-Z]{2}\d{3,4}$/),
+  airline: z.string().min(2).max(60),
+  airport: z.string().min(2).max(80),
+  terminal: z.enum(['T1', 'T2', 'T3']),
+  scheduledTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+});
+
+// POST /api/v1/flights – für Backend-Systeme mit OAuth Access Token
+export const POST = withErrorHandling(async (request) =&gt; {
+  const token = await verifyBearer(request, 'flights:write');
+  if (!token) return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
+
+  if (request.headers.get('content-type') !== 'application/json') {
+    return NextResponse.json({ error: 'Nur application/json' }, { status: 415 });
+  }
+  const parsed = newFlightSchema.safeParse(await request.json());
+  if (!parsed.success) {
+    const issues = parsed.error.issues.map((i) =&gt; ({ field: i.path.join('.'), message: i.message }));
+    return NextResponse.json({ error: 'Ungültige Daten', issues }, { status: 400 });
+  }
+
+  const created = db.insert(flights).values(parsed.data).returning().get();
+  return NextResponse.json(created, { status: 201 });
+});</code></pre>
+</div>
+        <ul>
+          <li><code>z.strictObject</code> lehnt unbekannte Felder ab – kein Mass Assignment.</li>
+          <li>Die Antwort bei ungültigen Daten nennt Feld und Regel, aber keine internen Details.</li>
+          <li><code>GET</code> liefert höchstens 200 Einträge und nur öffentliche Felder.</li>
+          <li><code>withErrorHandling</code> sorgt dafür, dass auch unerwartete Fehler (z.&nbsp;B. Datenbank nicht erreichbar) nur eine allgemeine Meldung mit Fehler-ID erzeugen.</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>10 — Umsetzung: Login begrenzen, SSRF und Open Redirect</h2>
+        <p>Das Rate Limiting schützt auch das Login aus Lektion 2.1 vor Brute Force und Credential Stuffing. Gleichzeitig führt der Login jetzt nach der Anmeldung zur ursprünglich aufgerufenen Seite zurück – ein typischer Ort für Open Redirects:</p>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/actions/auth-actions.ts (login, Ergänzungen)</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">// NEU: höchstens 5 Versuche pro Konto und 20 pro IP-Adresse in 15 Minuten
+const ip = (await headers()).get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown';
+const perAccount = rateLimit(`login:${email}`, 5, 15 * 60 * 1000);
+const perIp = rateLimit(`login-ip:${ip}`, 20, 15 * 60 * 1000);
+if (!perAccount.ok || !perIp.ok) redirect('/login?error=rate');
+// …
+// NEU: zurück zur ursprünglich aufgerufenen Seite – aber nur innerhalb der App
+const next = safeRedirectPath(formData.get('next'));
+redirect(needsMfa ? '/login/mfa' : next);</code></pre>
+</div>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/lib/safe-redirect.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">/** Schutz vor Open Redirect: nur relative Pfade innerhalb der eigenen App. */
+export function safeRedirectPath(target: unknown, fallback = '/konto'): string {
+  if (typeof target !== 'string') return fallback;
+  // "/konto" ist erlaubt, "//evil.example" und "/\evil.example" nicht
+  if (!target.startsWith('/') || target.startsWith('//') || target.startsWith('/\\')) {
+    return fallback;
+  }
+  return target;
+}</code></pre>
+</div>
+        <div class="callout callout-warning">
+  <div class="callout-icon">&#9888;</div>
+  <div class="callout-body">
+    <div class="callout-title">x-forwarded-for</div>
+    <p>Den Header <code>x-forwarded-for</code> setzt der Reverse Proxy vor der Anwendung (z.&nbsp;B. nginx).
+          Läuft die App ohne Proxy direkt im Internet, kann der Client ihn selbst fälschen. Er darf daher nur
+          verwendet werden, wenn ein vertrauenswürdiger Proxy ihn überschreibt.</p>
+  </div>
+</div>
+        <h3>Externe URLs sicher laden</h3>
+        <div class="code-block">
+  <div class="code-header">
+    <span class="code-filename">src/lib/safe-fetch.ts</span>
+    <span class="code-lang">TypeScript</span>
+  </div>
+  <pre><code class="language-typescript">import { lookup } from 'node:dns/promises';
+import { BlockList, isIP } from 'node:net';
+
+// Private, lokale und Cloud-Metadaten-Adressbereiche
+const blocked = new BlockList();
+for (const [net, prefix] of [['10.0.0.0', 8], ['172.16.0.0', 12], ['192.168.0.0', 16],
+  ['127.0.0.0', 8], ['169.254.0.0', 16], ['0.0.0.0', 8], ['100.64.0.0', 10]] as const) {
+  blocked.addSubnet(net, prefix, 'ipv4');
+}
+blocked.addSubnet('::1', 128, 'ipv6');
+blocked.addSubnet('fc00::', 7, 'ipv6');
+blocked.addSubnet('fe80::', 10, 'ipv6');
+
+/** Schutz vor SSRF: lädt nur öffentliche https-Adressen, folgt keinen Weiterleitungen. */
+export async function safeFetch(rawUrl: string): Promise&lt;Response&gt; {
+  const url = new URL(rawUrl);
+  if (url.protocol !== 'https:') throw new Error('Nur https erlaubt');
+
+  // ALLE Adressen prüfen, auf die der Name zeigt – nach der DNS-Auflösung
+  const addresses = isIP(url.hostname)
+    ? [{ address: url.hostname, family: isIP(url.hostname) }]
+    : await lookup(url.hostname, { all: true });
+  for (const { address, family } of addresses) {
+    if (blocked.check(address, family === 6 ? 'ipv6' : 'ipv4')) {
+      throw new Error('Interne Adresse nicht erlaubt');
+    }
+  }
+
+  return fetch(url, { redirect: 'manual', signal: AbortSignal.timeout(5000) });
+}</code></pre>
+</div>
+        <p>
+          <code>BlockList</code> aus <code>node:net</code> prüft, ob eine IP-Adresse in einem der gesperrten Bereiche
+          liegt. Eine Restlücke bleibt: Zwischen Prüfung und Abruf könnte der DNS-Eintrag wechseln
+          (<strong>DNS Rebinding</strong>). Wer das ausschließen muss, lässt solche Abrufe über einen eigenen
+          Proxy laufen, der nur ins Internet darf.
+        </p>
+      </section>
+
+      <section class="section section-fehler">
+        <h2>Häufige Fehler</h2>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: API Key im Frontend</div>
+  <p>Eine Single-Page-App ruft eine kostenpflichtige KI- oder Karten-API direkt mit dem API Key auf. Der Key ist in den DevTools sichtbar und wird massenhaft missbraucht – die Rechnung zahlt der Betreiber.</p>
+          <p class="fehler-fix">Kostenpflichtige APIs über das eigene Backend aufrufen; der Key bleibt am Server, das Backend prüft Benutzer und Limits.</p>
+</div>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: CORS als Sicherheitsfunktion missverstanden</div>
+  <p>Um einen CORS-Fehler loszuwerden, spiegelt die API jeden Origin und erlaubt Credentials. Jede beliebige Website kann jetzt im Namen angemeldeter Benutzer Daten auslesen.</p>
+          <p class="fehler-fix">Eine feste Allowlist exakter Origins verwenden; Credentials nur, wenn nötig.</p>
+</div>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: Stacktrace in der Antwort</div>
+  <p>Bei einem Fehler liefert die API den kompletten Stacktrace mit Framework-Version, Dateipfaden und SQL-Abfrage aus.</p>
+          <p class="fehler-fix">Allgemeine Fehlermeldung mit Fehler-ID an den Client, Details nur ins Log; Debug-Modus in Produktion deaktivieren.</p>
+</div>
+      </section>
+
+      <section class="section section-aufgaben">
+        <h2>Aufgaben</h2>
+        <div class="aufgaben-list">
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 1</span>
+    <span class="aufgabe-title">API beobachten</span>
+  </div>
+  <p>Öffne eine Web-App, die du nutzt, und beobachte im Tab <strong>Network</strong> der DevTools die API-Anfragen (Filter „Fetch/XHR“). Wie authentifiziert sich das Frontend (Cookie, Bearer Token, API Key)? Enthalten die Antworten mehr Daten, als die Seite anzeigt?</p>
+</div>
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 2</span>
+    <span class="aufgabe-title">Rate Limits umsetzen</span>
+  </div>
+  <p>Lege für die Endpunkte des FlugBoards sinnvolle Rate Limits fest (Login, Registrierung, Upload, Partner-API, Diagnose) und setze sie mit <code>rateLimit</code> um. Teste mit einer kleinen Schleife im Terminal (<code>for i in $(seq 1 30); do curl -s -o /dev/null -w "%{http_code}\n" …; done</code>), dass ab dem Limit 429 kommt.</p>
+</div>
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 3</span>
+    <span class="aufgabe-title">CORS-Szenarien</span>
+  </div>
+  <p>Die API <code>https://api.schule.example</code> wird vom Frontend <code>https://portal.schule.example</code> mit Cookies aufgerufen. Welche CORS-Header muss sie senden? Was passiert, wenn sie stattdessen <code>Access-Control-Allow-Origin: *</code> sendet? Und warum schützt CORS die API nicht vor einem Python-Skript?</p>
+</div>
+          <div class="aufgabe aufgabe-bonus">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Bonus</span>
+    <span class="aufgabe-title">SSRF-Risiko analysieren</span>
+  </div>
+  <p>Eine Lernplattform soll eine Funktion „Link-Vorschau“ bekommen, die Titel und Bild einer eingegebenen URL anzeigt. Beschreibe, wie ein Angreifer diese Funktion für SSRF missbrauchen könnte, und entwirf ein Schutzkonzept.</p>
+</div>
+        </div>
+      </section>
+
+      <section class="section section-quiz">
+        <h2>Wissenskontrolle</h2>
+        <div class="quiz" id="quiz-1">
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 1</span> Was identifiziert ein <strong>API Key</strong> typischerweise?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Einen einzelnen Benutzer mit seinen Rollen</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-1"> <span>Eine aufrufende Anwendung oder ein Projekt</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Eine Browser-Session</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Einen Datensatz in der Datenbank</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> API Keys sind langlebige Schlüssel für Anwendungen (z.&nbsp;B. für Server-zu-Server-Aufrufe und Abrechnung). Für Benutzer mit Rollen und kurzer Gültigkeit verwendet man Bearer Tokens aus OAuth/OIDC.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 2</span> Welche Aussage über CORS ist richtig?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>CORS schützt eine API vor Zugriffen durch Skripte und Tools wie curl</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-2"> <span>CORS erlaubt dem Server, die Same-Origin Policy des Browsers für bestimmte Origins zu lockern</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>CORS ersetzt die Authentifizierung</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span><code>Access-Control-Allow-Origin: *</code> ist zusammen mit Credentials die sicherste Einstellung</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> CORS ist ein Browser-Mechanismus, der Lesezugriff über Origin-Grenzen erlaubt. Andere Clients ignorieren ihn. <code>*</code> ist mit Credentials gar nicht erlaubt; sicher ist eine Allowlist konkreter Origins.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 3</span> Mit welchem Statuscode antwortet eine API, wenn ein Client sein Rate Limit überschreitet?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>401 Unauthorized</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>403 Forbidden</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-3"> <span>429 Too Many Requests</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>503 Service Unavailable</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> 429 ist genau für Rate Limiting gedacht, ergänzt um <code>Retry-After</code>. 401 und 403 betreffen Authentifizierung bzw. Berechtigung, 503 bedeutet, dass der Dienst insgesamt nicht verfügbar ist.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 4</span> Eine Funktion „Bild von URL importieren“ ruft auf Wunsch eines Angreifers eine interne Admin-Oberfläche auf. Welche Schwachstelle ist das, und was hilft?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Open Redirect – relative Pfade verwenden</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-4"> <span>SSRF – Allowlist für Ziele und Blockieren interner Adressbereiche nach der DNS-Auflösung</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>CSRF – SameSite-Cookies setzen</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>XSS – Output Encoding</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Bei Server-Side Request Forgery schickt der <em>Server</em> Anfragen an Ziele, die der Angreifer wählt – auch ins interne Netz. Schutz: erlaubte Ziele per Allowlist, private Adressen blockieren, Weiterleitungen nicht folgen.</div>
+  </div>
+  <div class="quiz-frage" data-multi="1">
+    <p class="quiz-q"><span class="quiz-num">Frage 5</span> Was gehört zu sicherem Error Handling in einer API?</p>
+    <p class="quiz-hint">Mehrere Antworten sind richtig.</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-5"> <span>Eine allgemeine Fehlermeldung mit Fehler-ID an den Client, Details nur ins interne Log</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-5"> <span>Den Stacktrace mitschicken, damit Entwickler Fehler schneller finden</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-5"> <span>Bei einem Fehler in der Berechtigungsprüfung den Zugriff verweigern</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-5"> <span>Unterschiedliche Meldungen für „Benutzer unbekannt“ und „Passwort falsch“</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Clients bekommen keine internen Details; die Fehler-ID verbindet Meldung und Log. Fail Securely bedeutet, im Zweifel abzulehnen. Stacktraces und unterschiedliche Login-Meldungen liefern Angreifern wertvolle Informationen.</div>
+  </div>
+  <div class="quiz-frage" data-multi="1">
+    <p class="quiz-q"><span class="quiz-num">Frage 6</span> Welche Optionen von <code>jwtVerify</code> verhindern, dass die API ein Token einer anderen Anwendung oder ein Token mit geändertem Algorithmus akzeptiert?</p>
+    <p class="quiz-hint">Mehrere Antworten sind richtig.</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-6"> <span><code>audience</code></span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-6"> <span><code>algorithms: ['RS256']</code></span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-6"> <span><code>Vary: Origin</code></span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-6"> <span><code>Retry-After</code></span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> <code>audience</code> prüft den Claim <code>aud</code>, <code>algorithms</code> legt die erlaubten Signaturverfahren fest (gegen <code>alg: none</code> und Algorithm Confusion). <code>Vary</code> und <code>Retry-After</code> sind HTTP-Header für CORS-Caching bzw. Rate Limiting.</div>
+  </div>
+  <div class="quiz-summary"><span class="quiz-score"></span><button type="button" class="quiz-reset">Zur&uuml;cksetzen</button></div>
+</div>
+      </section>
+
+    </div>
+
+    <nav class="lesson-nav">
+      <a class="nav-btn" href="2.6-xss-csrf.html">&larr; Lektion 2.6: XSS, CSRF &amp; Clickjacking</a>
+      <span class="nav-center-info">Lektion 2.7</span>
+      <a class="nav-btn primary" href="2.8-secure-development.html">Lektion 2.8: Secure Development &amp; OWASP &rarr;</a>
+    </nav>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>
+    const ham = document.getElementById('hamburger');
+    const sb = document.getElementById('sidebar');
+    const ov = document.getElementById('overlay');
+    ham.addEventListener('click', () => { sb.classList.toggle('open'); ov.classList.toggle('visible'); });
+    ov.addEventListener('click', () => { sb.classList.remove('open'); ov.classList.remove('visible'); });
+    const cur = window.location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.nav-link').forEach(l => {
+      if (l.getAttribute('href') === cur) l.classList.add('active');
+    });
+    const themeBtn = document.getElementById('theme-toggle');
+    const applyTheme = (t) => {
+      document.documentElement.setAttribute('data-theme', t);
+      if (themeBtn) themeBtn.innerHTML = t === 'dark' ? '&#9728;' : '&#9790;';
+    };
+    applyTheme(localStorage.getItem('kurs-theme') || 'dark');
+    setTimeout(() => document.documentElement.classList.add('theme-transitions'), 50);
+    if (themeBtn) themeBtn.addEventListener('click', () => {
+      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('kurs-theme', next);
+      applyTheme(next);
+    });
+    hljs.highlightAll();
+  </script>
+  <script>
+    document.querySelectorAll('.quiz').forEach((quiz) => {
+      const fragen = [...quiz.querySelectorAll('.quiz-frage')];
+      const score = quiz.querySelector('.quiz-score');
+      const update = () => {
+        const done = fragen.filter((f) => f.dataset.state).length;
+        const ok = fragen.filter((f) => f.dataset.state === 'ok').length;
+        score.textContent = done === 0
+          ? fragen.length + ' Fragen – wähle eine Antwort und prüfe sie.'
+          : ok + ' von ' + fragen.length + ' richtig'
+            + (done < fragen.length ? ' (' + done + ' von ' + fragen.length + ' bearbeitet)' : '');
+      };
+      fragen.forEach((f) => {
+        const inputs = [...f.querySelectorAll('input')];
+        const check = f.querySelector('.quiz-check');
+        const reveal = f.querySelector('.quiz-reveal');
+        const fb = f.querySelector('.quiz-feedback');
+        const exp = f.querySelector('.quiz-erklaerung');
+        inputs.forEach((i) => i.addEventListener('change', () => {
+          check.disabled = !inputs.some((x) => x.checked);
+        }));
+        const finish = (graded) => {
+          let allOk = true;
+          f.querySelectorAll('.quiz-opt').forEach((li) => {
+            const input = li.querySelector('input');
+            const corr = li.dataset.correct === '1';
+            if (corr !== input.checked) allOk = false;
+            if (corr) li.classList.add('opt-correct');
+            else if (input.checked) li.classList.add('opt-wrong');
+            input.disabled = true;
+          });
+          f.dataset.state = !graded ? 'shown' : (allOk ? 'ok' : 'wrong');
+          fb.className = 'quiz-feedback fb-' + f.dataset.state;
+          fb.textContent = !graded ? 'Lösung angezeigt.'
+            : (allOk ? '✔ Richtig!' : '✘ Leider nicht ganz – die richtige Lösung ist markiert.');
+          fb.hidden = false;
+          exp.hidden = false;
+          check.disabled = true;
+          reveal.disabled = true;
+          update();
+        };
+        check.addEventListener('click', () => finish(true));
+        reveal.addEventListener('click', () => finish(false));
+      });
+      quiz.querySelector('.quiz-reset').addEventListener('click', () => {
+        fragen.forEach((f) => {
+          delete f.dataset.state;
+          f.querySelectorAll('.quiz-opt').forEach((li) => li.classList.remove('opt-correct', 'opt-wrong'));
+          f.querySelectorAll('input').forEach((i) => { i.checked = false; i.disabled = false; });
+          f.querySelector('.quiz-check').disabled = true;
+          f.querySelector('.quiz-reveal').disabled = false;
+          f.querySelector('.quiz-feedback').hidden = true;
+          f.querySelector('.quiz-erklaerung').hidden = true;
+        });
+        update();
+      });
+      update();
+    });
+  </script>
+</body>
+
+</html>

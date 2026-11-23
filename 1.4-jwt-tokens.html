@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<!-- GENERIERT von kurse/_build (web_security) – nicht direkt bearbeiten!
+     Quelle: kurse/_build/web_security/lessons/, bauen: python3 _build/build.py web_security -->
+<html lang="de">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>1.4 &ndash; JWT &amp; Token-basierte Authentifizierung | Web Security &amp; Identity Kurs</title>
+  <script>(function () { var t = localStorage.getItem('kurs-theme') || 'dark'; document.documentElement.setAttribute('data-theme', t); })();</script>
+  <link rel="stylesheet" href="assets/kurs.css">
+  <link rel="stylesheet" id="hljs-theme"
+    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+
+<body>
+
+  <button class="hamburger" id="hamburger" aria-label="Navigation &ouml;ffnen">&#9776;</button>
+  <div class="sidebar-overlay" id="overlay"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <a href="index.html">
+        <span class="brand-icon">&#128274;</span>
+        <div>
+          <div class="brand-name">Web Security</div>
+          <div class="brand-sub">Web- und Mobile Computing</div>
+        </div>
+      </a>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Dark/Light Mode"
+        title="Theme wechseln">&#9728;</button>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group">
+        <div class="nav-group-label sec-label">Teil 1 &mdash; Konzepte</div>
+        <a class="nav-link" href="1.1-grundlagen.html"><span class="ln">1.1</span>Grundlagen der Web-Security</a>
+        <a class="nav-link" href="1.2-passwoerter.html"><span class="ln">1.2</span>Passwörter sicher speichern</a>
+        <a class="nav-link" href="1.3-sessions-cookies.html"><span class="ln">1.3</span>Sessions &amp; Cookies</a>
+        <a class="nav-link" href="1.4-jwt-tokens.html"><span class="ln">1.4</span>JWT &amp; Token-basierte Authentifizierung</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label secdev-label">Teil 2 &mdash; Umsetzung mit Next.js</div>
+        <a class="nav-link" href="2.1-login-sessions.html"><span class="ln">2.1</span>Login &amp; Sessions in Next.js</a>
+        <a class="nav-link" href="2.2-oauth-oidc-sso.html"><span class="ln">2.2</span>OAuth 2.0, OpenID Connect &amp; SSO</a>
+        <a class="nav-link" href="2.3-mfa-passkeys.html"><span class="ln">2.3</span>MFA, TOTP &amp; Passkeys</a>
+        <a class="nav-link" href="2.4-access-control.html"><span class="ln">2.4</span>Authorization &amp; Access Control</a>
+        <a class="nav-link" href="2.5-injection.html"><span class="ln">2.5</span>Injection &amp; unsichere Eingaben</a>
+        <a class="nav-link" href="2.6-xss-csrf.html"><span class="ln">2.6</span>XSS, CSRF &amp; Clickjacking</a>
+        <a class="nav-link" href="2.7-api-security.html"><span class="ln">2.7</span>API Security</a>
+        <a class="nav-link" href="2.8-secure-development.html"><span class="ln">2.8</span>Secure Development &amp; OWASP</a>
+      </div>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <header class="lesson-header">
+      <p class="lesson-eyebrow">Lektion 1.4 &mdash; Teil 1: Konzepte</p>
+      <h1>JWT &amp; Token-basierte Authentifizierung</h1>
+      <div class="lesson-tags">
+        <span class="tag tag-sec">Tokens</span>
+        <span class="tag tag-time">ca. 60 min</span>
+        <span class="tag tag-level">Grundlagen</span>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <section class="section section-lernziele">
+        <h2>Lernziele</h2>
+        <ul class="lernziele-list">
+          <li>Das Prinzip token-basierter Authentifizierung und den Begriff Bearer Token erklären</li>
+          <li>Den Aufbau eines JWT (Header, Payload, Signatur) und die wichtigsten Claims beschreiben</li>
+          <li>Begründen, warum ein JWT nicht verschlüsselt ist und welche Daten nicht hineingehören</li>
+          <li>Die Schritte einer korrekten JWT-Validierung aufzählen</li>
+          <li>Access Tokens und Refresh Tokens unterscheiden, Ablauf und Widerruf von Tokens erklären</li>
+          <li>Serverseitige Sessions und JWTs vergleichen und einen geeigneten Speicherort im Browser wählen</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>1 — Token-basierte Authentifizierung</h2>
+        <p>
+          Statt einer Session-ID, die der Server in seinem Session-Store nachschlagen muss (Lektion 1.3),
+          stellt der Server nach dem Login ein <strong>Token</strong> aus: eine Zeichenkette, die selbst die
+          nötigen Informationen enthält („Benutzer 42, Rolle customer, gültig bis 14:15 Uhr“) und vom Server
+          <strong>signiert</strong> ist. Der Server muss sich dann nichts merken – er prüft bei jeder Anfrage
+          nur die Signatur.
+        </p>
+        <p>
+          Der Client schickt das Token meist im HTTP-Header <code>Authorization</code> mit dem Schema
+          <code>Bearer</code> mit. <strong>Bearer</strong> heißt „Inhaber“: Wer das Token besitzt, wird
+          akzeptiert – wie bei einer Kinokarte, auf der kein Name steht. Ein gestohlenes Bearer Token ist
+          deshalb genauso gefährlich wie eine gestohlene Session-ID.
+        </p>
+        <p>Typische Einsatzgebiete:</p>
+        <ul>
+          <li>APIs, die von Single-Page-Apps oder Mobile-Apps aufgerufen werden</li>
+          <li>Microservices, die die Identität des Benutzers untereinander weitergeben</li>
+          <li>OAuth 2.0 und OpenID Connect (Lektion 2.2)</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>2 — Aufbau eines JSON Web Token (JWT)</h2>
+        <p>
+          Das verbreitetste Token-Format ist der <strong>JSON Web Token</strong> (JWT, ausgesprochen „jot“),
+          standardisiert in RFC&nbsp;7519. Ein JWT besteht aus drei Teilen, die jeweils
+          <strong>Base64URL-kodiert</strong> und durch Punkte getrennt sind.
+        </p>
+        <figure class="figure">
+  <div class="figure-img"><img src="assets/img/jwt-aufbau.svg" alt="Header, Payload und Signatur eines JWT" loading="lazy" style="max-width:680px"></div>
+  <figcaption>Header, Payload und Signatur eines JWT</figcaption>
+</figure>
+        <p>Die Angaben im Payload heißen <strong>Claims</strong> (Behauptungen). Einige sind standardisiert:</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Claim</th><th>Name</th><th>Bedeutung</th></tr></thead>
+            <tbody>
+              <tr><td><code>iss</code></td><td>Issuer</td><td>Wer hat das Token ausgestellt?</td></tr>
+              <tr><td><code>sub</code></td><td>Subject</td><td>Für wen? (meist die Benutzer-ID)</td></tr>
+              <tr><td><code>aud</code></td><td>Audience</td><td>Für welche Anwendung/API ist das Token bestimmt?</td></tr>
+              <tr><td><code>exp</code></td><td>Expiration Time</td><td>Ablaufzeitpunkt (Sekunden seit 1.1.1970)</td></tr>
+              <tr><td><code>nbf</code></td><td>Not Before</td><td>frühester Gültigkeitszeitpunkt</td></tr>
+              <tr><td><code>iat</code></td><td>Issued At</td><td>Ausstellungszeitpunkt</td></tr>
+              <tr><td><code>jti</code></td><td>JWT ID</td><td>eindeutige Kennung des Tokens (z.&nbsp;B. für Sperrlisten)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Dazu kommen eigene Claims wie Rolle oder Name.</p>
+        <div class="callout callout-error">
+  <div class="callout-icon">&#10007;</div>
+  <div class="callout-body">
+    <div class="callout-title">Kodiert ist nicht verschlüsselt</div>
+    <p>Base64URL ist nur eine Darstellung, keine Verschlüsselung. Jeder, der das Token sieht, kann den
+          Payload lesen – probiere es auf <strong>jwt.io</strong> aus. Passwörter, Gesundheitsdaten oder
+          andere Geheimnisse gehören <strong>nie</strong> in ein JWT. Die Signatur schützt nur davor,
+          dass der Inhalt <em>verändert</em> wird (Integrität), nicht davor, dass er <em>gelesen</em> wird.</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>3 — Die Signatur</h2>
+        <p>
+          Die Signatur wird aus Header und Payload mit einem Schlüssel berechnet. Ändert jemand auch nur ein
+          Zeichen im Payload (z.&nbsp;B. <code>role: customer</code> → <code>role: admin</code>), passt die
+          Signatur nicht mehr und der Server lehnt das Token ab. Welches Verfahren verwendet wurde, steht im
+          Header-Feld <code>alg</code>:
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Verfahren</th><th>Schlüssel</th><th>Wer kann prüfen?</th><th>Einsatz</th></tr></thead>
+            <tbody>
+              <tr><td><strong>HS256</strong> (HMAC)</td><td>ein gemeinsames Geheimnis zum Signieren und Prüfen</td><td>nur wer das Geheimnis kennt – und der könnte auch selbst Tokens ausstellen</td><td>ein einzelnes Backend stellt aus und prüft</td></tr>
+              <tr><td><strong>RS256</strong>, <strong>ES256</strong></td><td>privater Schlüssel zum Signieren, öffentlicher Schlüssel zum Prüfen</td><td>jeder mit dem öffentlichen Schlüssel – ohne Tokens fälschen zu können</td><td>zentraler Identity Provider, viele APIs prüfen</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          Bei RS256/ES256 veröffentlicht der Aussteller seine öffentlichen Schlüssel meist als <strong>JWKS</strong>
+          (JSON Web Key Set) unter einer festen URL. Ein HS256-Geheimnis muss lang und zufällig sein und wird
+          wie jedes andere Secret behandelt (Lektion 2.8).
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>4 — Ein JWT richtig validieren</h2>
+        <p>Ein JWT nur zu <em>dekodieren</em> und den Inhalt zu glauben, ist einer der gefährlichsten Fehler. Bei jeder Anfrage muss der Server prüfen:</p>
+        <ol>
+          <li><strong>Signatur</strong> mit dem erwarteten Schlüssel prüfen.</li>
+          <li><strong>Algorithmus</strong> fest vorgeben und nicht aus dem Token übernehmen.</li>
+          <li><strong>Ablauf</strong>: <code>exp</code> liegt in der Zukunft, <code>nbf</code> (falls vorhanden) in der Vergangenheit.</li>
+          <li><strong>Aussteller</strong>: <code>iss</code> ist der erwartete Identity Provider.</li>
+          <li><strong>Empfänger</strong>: <code>aud</code> enthält genau diese API – ein Token für eine andere Anwendung wird abgelehnt.</li>
+          <li>Erst danach die Claims (<code>sub</code>, Rolle) für die Autorisierung verwenden.</li>
+        </ol>
+        <div class="callout callout-warning">
+  <div class="callout-icon">&#9888;</div>
+  <div class="callout-body">
+    <div class="callout-title">Bekannte Angriffe über den Header</div>
+    <ul>
+            <li><strong>alg: none</strong> – ein Token ohne Signatur. Ältere Bibliotheken haben es akzeptiert, wenn der Algorithmus aus dem Token übernommen wurde.</li>
+            <li><strong>Algorithm Confusion</strong> – ein Angreifer ändert RS256 auf HS256 und signiert mit dem <em>öffentlichen</em> Schlüssel als „Geheimnis“. Eine schlecht konfigurierte Bibliothek prüft dann erfolgreich.</li>
+          </ul>
+          Beides wird verhindert, wenn die erlaubten Algorithmen fest konfiguriert sind und eine aktuelle, bewährte JWT-Bibliothek verwendet wird.
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>5 — Access Tokens und Refresh Tokens</h2>
+        <p>Ein Token, das lange gültig ist, ist bequem – und gefährlich, wenn es gestohlen wird. Deshalb werden zwei Arten von Tokens kombiniert:</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th></th><th>Access Token</th><th>Refresh Token</th></tr></thead>
+            <tbody>
+              <tr><td>Zweck</td><td>Zugriff auf die API</td><td>neue Access Tokens holen</td></tr>
+              <tr><td>Lebensdauer</td><td>kurz (z.&nbsp;B. 5–15 min)</td><td>länger (Stunden bis Wochen)</td></tr>
+              <tr><td>Wird geschickt an</td><td>jede API-Anfrage</td><td>nur an den Token-Endpunkt des Ausstellers</td></tr>
+              <tr><td>Format</td><td>oft JWT</td><td>meist eine zufällige Zeichenkette, die der Server in der Datenbank speichert</td></tr>
+              <tr><td>Widerrufbar?</td><td>schwer (siehe Abschnitt 6)</td><td>ja, durch Löschen in der Datenbank</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          Läuft das Access Token ab, holt der Client mit dem Refresh Token ein neues, ohne dass sich der
+          Benutzer erneut anmelden muss. Wird das Access Token gestohlen, ist es nur wenige Minuten nutzbar.
+        </p>
+        <div class="callout callout-tip">
+  <div class="callout-icon">&#128161;</div>
+  <div class="callout-body">
+    <div class="callout-title">Refresh Token Rotation</div>
+    <p>Bei jeder Verwendung gibt der Server ein <strong>neues</strong> Refresh Token aus und macht das alte
+          ungültig. Taucht ein bereits verwendetes Refresh Token noch einmal auf, wurde es offensichtlich
+          kopiert – der Server sperrt dann die ganze Token-Familie und der Benutzer muss sich neu anmelden
+          (<strong>Reuse Detection</strong>).</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>6 — Token Expiration und Token Revocation</h2>
+        <p>
+          Der große Vorteil eines JWT – der Server muss nichts nachschlagen – ist zugleich sein größter
+          Nachteil: Ein ausgestelltes Token bleibt bis <code>exp</code> gültig, auch wenn sich der Benutzer
+          abmeldet, sein Passwort ändert oder gesperrt wird. Möglichkeiten für einen <strong>Widerruf</strong>
+          (Revocation):
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Strategie</th><th>Funktionsweise</th><th>Nachteil</th></tr></thead>
+            <tbody>
+              <tr><td>Kurze Lebensdauer</td><td>Access Token läuft nach wenigen Minuten ab; widerrufen wird das Refresh Token</td><td>Zugriff bleibt bis zum Ablauf möglich</td></tr>
+              <tr><td>Sperrliste (Denylist)</td><td>Die <code>jti</code> widerrufener Tokens wird gespeichert und bei jeder Anfrage geprüft</td><td>wieder ein Nachschlagen pro Anfrage</td></tr>
+              <tr><td>Token-Version pro Benutzer</td><td>Ein Zähler in der Datenbank steht auch im Token; bei Passwortänderung wird er erhöht</td><td>ebenfalls Datenbankzugriff</td></tr>
+              <tr><td>Token Introspection</td><td>Die API fragt beim Aussteller nach, ob das Token noch gültig ist (Standard in OAuth 2.0)</td><td>zusätzliche Netzwerkanfrage</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>7 — Wo speichert der Browser das Token?</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Speicherort</th><th>Vorteil</th><th>Risiko</th></tr></thead>
+            <tbody>
+              <tr><td><code>localStorage</code></td><td>einfach, überlebt Neuladen</td><td>jedes Skript auf der Seite kann es lesen – eine XSS-Lücke genügt für den Diebstahl</td></tr>
+              <tr><td>JavaScript-Variable (Arbeitsspeicher)</td><td>nach Neuladen weg, schwerer zu stehlen</td><td>nach Neuladen ist ein neues Token nötig; XSS kann es während der Laufzeit trotzdem verwenden</td></tr>
+              <tr><td>Cookie mit <code>HttpOnly</code>, <code>Secure</code>, <code>SameSite</code></td><td>für JavaScript unlesbar</td><td>wird automatisch mitgeschickt → CSRF-Schutz nötig (Lektion 2.6)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout callout-info">
+  <div class="callout-icon">&#8505;</div>
+  <div class="callout-body">
+    <div class="callout-title">Backend for Frontend (BFF)</div>
+    <p>Für Browser-Anwendungen wird heute häufig empfohlen, Tokens gar nicht im Browser zu halten: Ein
+          kleines eigenes Backend (<strong>Backend for Frontend</strong>) erledigt den Login, bewahrt die Tokens
+          serverseitig auf und gibt dem Browser nur ein sicheres Session-Cookie. Das verbindet die Vorteile
+          beider Welten.</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>8 — Sessions oder JWT?</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th></th><th>Serverseitige Session</th><th>JWT</th></tr></thead>
+            <tbody>
+              <tr><td>Zustand</td><td>am Server</td><td>im Token</td></tr>
+              <tr><td>Widerruf</td><td>sofort (Session löschen)</td><td>aufwendig</td></tr>
+              <tr><td>Skalierung</td><td>gemeinsamer Session-Store nötig</td><td>jeder Server kann selbst prüfen</td></tr>
+              <tr><td>Einsatz über Domains/Dienste hinweg</td><td>schwierig</td><td>einfach</td></tr>
+              <tr><td>Typisch für</td><td>klassische Web-Apps mit eigenem Backend</td><td>APIs, Mobile-Apps, Microservices, OAuth/OIDC</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout callout-tip">
+  <div class="callout-icon">&#128161;</div>
+  <div class="callout-body">
+    <div class="callout-title">Faustregel</div>
+    <p>Für eine klassische Web-Anwendung mit einem eigenen Backend sind serverseitige Sessions meist
+          einfacher und sicherer. JWTs spielen ihre Stärken aus, wenn mehrere Dienste dieselbe Anmeldung
+          prüfen müssen.</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section section-fehler">
+        <h2>Häufige Fehler</h2>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: Token wird nur dekodiert, nicht geprüft</div>
+  <p>Die API liest die Rolle aus dem Payload, ohne die Signatur zu prüfen. Ein Angreifer ändert die Rolle auf „admin“ und erhält Vollzugriff.</p>
+          <p class="fehler-fix">Immer mit einer bewährten Bibliothek verifizieren: Signatur, fest vorgegebener Algorithmus, <code>exp</code>, <code>iss</code>, <code>aud</code>.</p>
+</div>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: Sensible Daten im Payload</div>
+  <p>Ins Token werden E-Mail, Geburtsdatum und Sozialversicherungsnummer geschrieben, „weil es ja signiert ist“. Jeder, der das Token sieht, kann alles lesen.</p>
+          <p class="fehler-fix">Nur die nötigsten, nicht vertraulichen Claims aufnehmen (meist <code>sub</code> und Rolle). Weitere Daten bei Bedarf von der API laden.</p>
+</div>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: Access Token mit 30 Tagen Laufzeit</div>
+  <p>Um Refresh Tokens zu vermeiden, ist das Access Token einen Monat gültig. Ein gestohlenes Token kann so lange missbraucht werden – und lässt sich nicht widerrufen.</p>
+          <p class="fehler-fix">Kurzlebige Access Tokens mit Refresh Tokens kombinieren, Refresh Tokens rotieren.</p>
+</div>
+      </section>
+
+      <section class="section section-aufgaben">
+        <h2>Aufgaben</h2>
+        <div class="aufgaben-list">
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 1</span>
+    <span class="aufgabe-title">JWT untersuchen</span>
+  </div>
+  <p>Öffne <strong>jwt.io</strong> und lies das Beispiel-Token. Ordne jeden Teil (Header, Payload, Signatur) zu und erkläre, welche Claims du erkennst. Ändere im Payload einen Wert: Was passiert mit der Signaturprüfung?</p>
+</div>
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 2</span>
+    <span class="aufgabe-title">Validierungs-Checkliste</span>
+  </div>
+  <p>Erstelle eine Checkliste für ein Code-Review: Welche Punkte muss eine API prüfen, bevor sie einem JWT vertraut? Begründe zu jedem Punkt, welcher Angriff ohne diese Prüfung möglich wäre.</p>
+</div>
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 3</span>
+    <span class="aufgabe-title">Architekturentscheidung</span>
+  </div>
+  <p>Ein Team baut (a) eine Schulbibliotheks-Webseite mit einem Backend und (b) eine Plattform mit Web-App, iOS-App und fünf Microservices. Empfiehl jeweils serverseitige Sessions oder JWT und begründe.</p>
+</div>
+          <div class="aufgabe aufgabe-bonus">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Bonus</span>
+    <span class="aufgabe-title">Logout mit JWT</span>
+  </div>
+  <p>Ein Benutzer klickt bei einer JWT-basierten Anwendung auf „Abmelden“. Beschreibe, was im Browser und am Server passieren muss, damit ein vorher kopiertes Access Token und Refresh Token nicht mehr verwendet werden können.</p>
+</div>
+        </div>
+      </section>
+
+      <section class="section section-quiz">
+        <h2>Wissenskontrolle</h2>
+        <div class="quiz" id="quiz-1">
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 1</span> Welche Aussage über den Payload eines signierten JWT ist richtig?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Er ist verschlüsselt und nur für den Server lesbar</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-1"> <span>Er ist nur Base64URL-kodiert und für jeden lesbar, der das Token hat</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Er kann vom Client beliebig geändert werden, ohne dass es auffällt</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Er enthält immer das Passwort des Benutzers</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Ein normales (signiertes) JWT ist nicht verschlüsselt. Die Signatur sorgt dafür, dass Änderungen auffallen – lesen kann den Inhalt aber jeder. Passwörter oder andere Geheimnisse gehören deshalb nie in ein JWT.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 2</span> Wofür steht der Claim <code>aud</code>?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Den Aussteller des Tokens</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Den Benutzer, für den das Token gilt</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-2"> <span>Die Anwendung bzw. API, für die das Token bestimmt ist</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Den Ablaufzeitpunkt</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> <code>aud</code> (Audience) nennt den Empfänger. Prüft eine API ihn nicht, akzeptiert sie womöglich Tokens, die für eine ganz andere Anwendung ausgestellt wurden. Aussteller ist <code>iss</code>, Benutzer <code>sub</code>, Ablauf <code>exp</code>.</div>
+  </div>
+  <div class="quiz-frage" data-multi="1">
+    <p class="quiz-q"><span class="quiz-num">Frage 3</span> Was muss eine API bei jedem eingehenden JWT prüfen?</p>
+    <p class="quiz-hint">Mehrere Antworten sind richtig.</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-3"> <span>Die Signatur mit einem fest vorgegebenen Algorithmus</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-3"> <span>Ob <code>exp</code> noch nicht erreicht ist</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-3"> <span>Ob <code>iss</code> und <code>aud</code> den erwarteten Werten entsprechen</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-3"> <span>Ob das Token in <code>localStorage</code> gespeichert war</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Signatur, Algorithmus, Ablaufzeit, Aussteller und Empfänger gehören zur Validierung. Wo der Client das Token gespeichert hat, kann der Server weder erkennen noch prüfen.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 4</span> Warum sind Access Tokens kurzlebig und werden mit Refresh Tokens kombiniert?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Weil JWTs technisch nur 15 Minuten gültig sein dürfen</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-4"> <span>Weil ein gestohlenes Access Token so nur kurz nutzbar ist, während sich das Refresh Token am Server widerrufen lässt</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Weil Refresh Tokens an jede API-Anfrage angehängt werden</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Damit sich der Benutzer alle 15 Minuten neu anmelden muss</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Access Tokens lassen sich schwer widerrufen, also begrenzt man den Schaden durch kurze Laufzeit. Das Refresh Token geht nur an den Token-Endpunkt, wird serverseitig gespeichert und kann gesperrt werden. Der Benutzer merkt vom Erneuern nichts.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 5</span> Eine Single-Page-App speichert das Access Token in <code>localStorage</code>. Welches Risiko entsteht dadurch vor allem?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span>Das Token wird bei jeder Anfrage automatisch an fremde Seiten geschickt</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-5"> <span>Eingeschleustes JavaScript (XSS) kann das Token auslesen und an den Angreifer schicken</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span>Das Token geht beim Schließen des Tabs sofort verloren</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span>Der Server kann das Token nicht mehr prüfen</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Jedes Skript, das auf der Seite läuft, kann <code>localStorage</code> lesen. <code>localStorage</code> wird nicht automatisch mitgeschickt (das tun Cookies) und bleibt auch nach dem Schließen erhalten.</div>
+  </div>
+  <div class="quiz-summary"><span class="quiz-score"></span><button type="button" class="quiz-reset">Zur&uuml;cksetzen</button></div>
+</div>
+      </section>
+
+    </div>
+
+    <nav class="lesson-nav">
+      <a class="nav-btn" href="1.3-sessions-cookies.html">&larr; Lektion 1.3: Sessions &amp; Cookies</a>
+      <span class="nav-center-info">Lektion 1.4</span>
+      <a class="nav-btn primary" href="2.1-login-sessions.html">Lektion 2.1: Login &amp; Sessions in Next.js &rarr;</a>
+    </nav>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>
+    const ham = document.getElementById('hamburger');
+    const sb = document.getElementById('sidebar');
+    const ov = document.getElementById('overlay');
+    ham.addEventListener('click', () => { sb.classList.toggle('open'); ov.classList.toggle('visible'); });
+    ov.addEventListener('click', () => { sb.classList.remove('open'); ov.classList.remove('visible'); });
+    const cur = window.location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.nav-link').forEach(l => {
+      if (l.getAttribute('href') === cur) l.classList.add('active');
+    });
+    const themeBtn = document.getElementById('theme-toggle');
+    const applyTheme = (t) => {
+      document.documentElement.setAttribute('data-theme', t);
+      if (themeBtn) themeBtn.innerHTML = t === 'dark' ? '&#9728;' : '&#9790;';
+    };
+    applyTheme(localStorage.getItem('kurs-theme') || 'dark');
+    setTimeout(() => document.documentElement.classList.add('theme-transitions'), 50);
+    if (themeBtn) themeBtn.addEventListener('click', () => {
+      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('kurs-theme', next);
+      applyTheme(next);
+    });
+    hljs.highlightAll();
+  </script>
+  <script>
+    document.querySelectorAll('.quiz').forEach((quiz) => {
+      const fragen = [...quiz.querySelectorAll('.quiz-frage')];
+      const score = quiz.querySelector('.quiz-score');
+      const update = () => {
+        const done = fragen.filter((f) => f.dataset.state).length;
+        const ok = fragen.filter((f) => f.dataset.state === 'ok').length;
+        score.textContent = done === 0
+          ? fragen.length + ' Fragen – wähle eine Antwort und prüfe sie.'
+          : ok + ' von ' + fragen.length + ' richtig'
+            + (done < fragen.length ? ' (' + done + ' von ' + fragen.length + ' bearbeitet)' : '');
+      };
+      fragen.forEach((f) => {
+        const inputs = [...f.querySelectorAll('input')];
+        const check = f.querySelector('.quiz-check');
+        const reveal = f.querySelector('.quiz-reveal');
+        const fb = f.querySelector('.quiz-feedback');
+        const exp = f.querySelector('.quiz-erklaerung');
+        inputs.forEach((i) => i.addEventListener('change', () => {
+          check.disabled = !inputs.some((x) => x.checked);
+        }));
+        const finish = (graded) => {
+          let allOk = true;
+          f.querySelectorAll('.quiz-opt').forEach((li) => {
+            const input = li.querySelector('input');
+            const corr = li.dataset.correct === '1';
+            if (corr !== input.checked) allOk = false;
+            if (corr) li.classList.add('opt-correct');
+            else if (input.checked) li.classList.add('opt-wrong');
+            input.disabled = true;
+          });
+          f.dataset.state = !graded ? 'shown' : (allOk ? 'ok' : 'wrong');
+          fb.className = 'quiz-feedback fb-' + f.dataset.state;
+          fb.textContent = !graded ? 'Lösung angezeigt.'
+            : (allOk ? '✔ Richtig!' : '✘ Leider nicht ganz – die richtige Lösung ist markiert.');
+          fb.hidden = false;
+          exp.hidden = false;
+          check.disabled = true;
+          reveal.disabled = true;
+          update();
+        };
+        check.addEventListener('click', () => finish(true));
+        reveal.addEventListener('click', () => finish(false));
+      });
+      quiz.querySelector('.quiz-reset').addEventListener('click', () => {
+        fragen.forEach((f) => {
+          delete f.dataset.state;
+          f.querySelectorAll('.quiz-opt').forEach((li) => li.classList.remove('opt-correct', 'opt-wrong'));
+          f.querySelectorAll('input').forEach((i) => { i.checked = false; i.disabled = false; });
+          f.querySelector('.quiz-check').disabled = true;
+          f.querySelector('.quiz-reveal').disabled = false;
+          f.querySelector('.quiz-feedback').hidden = true;
+          f.querySelector('.quiz-erklaerung').hidden = true;
+        });
+        update();
+      });
+      update();
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<!-- GENERIERT von kurse/_build (web_security) – nicht direkt bearbeiten!
+     Quelle: kurse/_build/web_security/lessons/, bauen: python3 _build/build.py web_security -->
+<html lang="de">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>1.1 &ndash; Grundlagen der Web-Security | Web Security &amp; Identity Kurs</title>
+  <script>(function () { var t = localStorage.getItem('kurs-theme') || 'dark'; document.documentElement.setAttribute('data-theme', t); })();</script>
+  <link rel="stylesheet" href="assets/kurs.css">
+  <link rel="stylesheet" id="hljs-theme"
+    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+
+<body>
+
+  <button class="hamburger" id="hamburger" aria-label="Navigation &ouml;ffnen">&#9776;</button>
+  <div class="sidebar-overlay" id="overlay"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <a href="index.html">
+        <span class="brand-icon">&#128274;</span>
+        <div>
+          <div class="brand-name">Web Security</div>
+          <div class="brand-sub">Web- und Mobile Computing</div>
+        </div>
+      </a>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Dark/Light Mode"
+        title="Theme wechseln">&#9728;</button>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group">
+        <div class="nav-group-label sec-label">Teil 1 &mdash; Konzepte</div>
+        <a class="nav-link" href="1.1-grundlagen.html"><span class="ln">1.1</span>Grundlagen der Web-Security</a>
+        <a class="nav-link" href="1.2-passwoerter.html"><span class="ln">1.2</span>Passwörter sicher speichern</a>
+        <a class="nav-link" href="1.3-sessions-cookies.html"><span class="ln">1.3</span>Sessions &amp; Cookies</a>
+        <a class="nav-link" href="1.4-jwt-tokens.html"><span class="ln">1.4</span>JWT &amp; Token-basierte Authentifizierung</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label secdev-label">Teil 2 &mdash; Umsetzung mit Next.js</div>
+        <a class="nav-link" href="2.1-login-sessions.html"><span class="ln">2.1</span>Login &amp; Sessions in Next.js</a>
+        <a class="nav-link" href="2.2-oauth-oidc-sso.html"><span class="ln">2.2</span>OAuth 2.0, OpenID Connect &amp; SSO</a>
+        <a class="nav-link" href="2.3-mfa-passkeys.html"><span class="ln">2.3</span>MFA, TOTP &amp; Passkeys</a>
+        <a class="nav-link" href="2.4-access-control.html"><span class="ln">2.4</span>Authorization &amp; Access Control</a>
+        <a class="nav-link" href="2.5-injection.html"><span class="ln">2.5</span>Injection &amp; unsichere Eingaben</a>
+        <a class="nav-link" href="2.6-xss-csrf.html"><span class="ln">2.6</span>XSS, CSRF &amp; Clickjacking</a>
+        <a class="nav-link" href="2.7-api-security.html"><span class="ln">2.7</span>API Security</a>
+        <a class="nav-link" href="2.8-secure-development.html"><span class="ln">2.8</span>Secure Development &amp; OWASP</a>
+      </div>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <header class="lesson-header">
+      <p class="lesson-eyebrow">Lektion 1.1 &mdash; Teil 1: Konzepte</p>
+      <h1>Grundlagen der Web-Security</h1>
+      <div class="lesson-tags">
+        <span class="tag tag-sec">Grundlagen</span>
+        <span class="tag tag-time">ca. 45 min</span>
+        <span class="tag tag-level">Grundlagen</span>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <section class="section section-lernziele">
+        <h2>Lernziele</h2>
+        <ul class="lernziele-list">
+          <li>Erklären, warum Sicherheit eine Aufgabe der Softwareentwicklung ist und nicht nur des Netzwerks</li>
+          <li><strong>Authentication</strong> und <strong>Authorization</strong> unterscheiden</li>
+          <li>Die Schutzziele Vertraulichkeit, Integrität und Verfügbarkeit an Beispielen erklären</li>
+          <li>Das Prinzip „Never trust the client“ begründen</li>
+          <li>OWASP und die OWASP Top 10 einordnen</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>1 — Warum Security in die Webentwicklung gehört</h2>
+        <p>
+          Die meisten erfolgreichen Angriffe auf Webanwendungen brechen nicht durch eine Firewall,
+          sondern nutzen <strong>Fehler in der Anwendung selbst</strong>: ein fehlender Berechtigungscheck,
+          ein unsicher gespeichertes Passwort, eine Benutzereingabe, die ungeprüft in eine
+          Datenbankabfrage gelangt. Diese Fehler entstehen beim Programmieren – und können auch nur
+          dort behoben werden.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Typischer Vorfall</th><th>Ursache im Code</th><th>Lektion</th></tr></thead>
+            <tbody>
+              <tr><td>Nach einem Datenleck sind Millionen Passwörter im Klartext lesbar</td><td>Passwörter nicht oder schlecht gehasht</td><td>1.2</td></tr>
+              <tr><td>Fremde Benutzerkonten werden übernommen</td><td>Session-Cookies ungeschützt, kein MFA</td><td>1.3, 2.3</td></tr>
+              <tr><td>Ein Kunde sieht die Rechnungen anderer Kunden, indem er die Nummer in der URL ändert</td><td>fehlende Prüfung, wem die Rechnung gehört</td><td>2.4</td></tr>
+              <tr><td>Die gesamte Kundendatenbank wird ausgelesen</td><td>SQL Injection</td><td>2.5</td></tr>
+              <tr><td>Fremdes JavaScript läuft im Browser der Benutzer</td><td>Ausgabe nicht kodiert (XSS)</td><td>2.6</td></tr>
+              <tr><td>Ein API-Schlüssel landet öffentlich auf GitHub</td><td>Secrets im Quellcode</td><td>2.8</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout callout-tip">
+  <div class="callout-icon">&#128161;</div>
+  <div class="callout-body">
+    <div class="callout-title">Merksatz</div>
+    <p>Security ist keine Zusatzfunktion, die man am Ende „einbaut“, sondern eine <strong>Eigenschaft
+          des Codes</strong> – genauso wie Korrektheit oder Performance.</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section">
+        <h2>2 — Authentication vs. Authorization</h2>
+        <p>Die beiden Begriffe klingen ähnlich und werden oft verwechselt. Sie beantworten aber zwei verschiedene Fragen:</p>
+        <div class="two-col">
+          <div>
+            <h3 class="mt-0">Authentication (AuthN)</h3>
+            <p><strong>Wer bist du?</strong> Die Anwendung prüft, ob jemand wirklich der ist, für den er sich ausgibt – z.&nbsp;B. durch ein Passwort, einen Code am Handy oder einen Passkey.</p>
+          </div>
+          <div>
+            <h3 class="mt-0">Authorization (AuthZ)</h3>
+            <p><strong>Was darfst du?</strong> Die Anwendung entscheidet, welche Daten und Funktionen eine bereits bekannte Person verwenden darf.</p>
+          </div>
+        </div>
+        <p>
+          <strong>Beispiel Hotel:</strong> An der Rezeption zeigst du deinen Ausweis (Authentication). Du
+          bekommst eine Zimmerkarte, die nur <em>dein</em> Zimmer und den Fitnessraum öffnet, aber nicht
+          die Küche oder fremde Zimmer (Authorization).
+        </p>
+        <p>
+          Die Authentication kommt immer zuerst: Ohne zu wissen, <em>wer</em> anfragt, kann man nicht
+          entscheiden, <em>was</em> er darf. Umgekehrt gilt aber: Eingeloggt sein heißt <strong>nicht</strong>,
+          alles zu dürfen.
+        </p>
+        <h3>Die passenden HTTP-Statuscodes</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Status</th><th>Bedeutung</th><th>Beispiel</th></tr></thead>
+            <tbody>
+              <tr><td><strong>401 Unauthorized</strong></td><td>Nicht (gültig) authentifiziert – der Name ist historisch irreführend</td><td>Kein oder abgelaufenes Login</td></tr>
+              <tr><td><strong>403 Forbidden</strong></td><td>Authentifiziert, aber keine Berechtigung</td><td>Normaler Benutzer ruft die Admin-Seite auf</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>3 — Schutzziele: Was soll geschützt werden?</h2>
+        <p>Sicherheitsmaßnahmen dienen immer einem oder mehreren <strong>Schutzzielen</strong>. Die drei klassischen werden nach ihren englischen Anfangsbuchstaben auch <strong>CIA-Triade</strong> genannt:</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Schutzziel</th><th>Bedeutung</th><th>Verletzung in einer Web-App</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Vertraulichkeit</strong> (Confidentiality)</td><td>Nur Berechtigte können Daten lesen</td><td>Fremde lesen Bestellungen oder Gesundheitsdaten</td></tr>
+              <tr><td><strong>Integrität</strong> (Integrity)</td><td>Daten werden nicht unbemerkt verändert</td><td>Ein Angreifer ändert den Preis im Warenkorb oder die eigene Rolle auf „admin“</td></tr>
+              <tr><td><strong>Verfügbarkeit</strong> (Availability)</td><td>Das System ist nutzbar, wenn es gebraucht wird</td><td>Ein Endpunkt wird mit Millionen Anfragen lahmgelegt</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          Dazu kommt in der Praxis die <strong>Nachvollziehbarkeit</strong> (Accountability): Man kann
+          feststellen, wer wann was getan hat – etwa durch Security Logging (Lektion 2.8).
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>4 — Never trust the client</h2>
+        <p>
+          Eine Webanwendung besteht aus Code, der beim Benutzer läuft (Browser, App), und Code, der am
+          Server läuft. Dazwischen liegt eine <strong>Vertrauensgrenze</strong> (Trust Boundary): Alles,
+          was vom Client kommt, kann der Benutzer – oder ein Angreifer – beliebig verändern.
+        </p>
+        <ul>
+          <li>Formularfelder, auch versteckte und deaktivierte Felder</li>
+          <li>URL-Parameter und Pfade</li>
+          <li>Cookies und HTTP-Header</li>
+          <li>JSON-Daten, die ein Frontend an eine API schickt</li>
+          <li>der JavaScript-Code des Frontends selbst – er ist öffentlich lesbar und lässt sich in den DevTools ändern</li>
+        </ul>
+        <p>Angreifer müssen dafür nicht einmal deinen Browser verwenden: Jede HTTP-Anfrage lässt sich mit Werkzeugen wie Postman oder curl frei zusammenstellen.</p>
+        <div class="do-dont">
+          <div class="do-box">
+            <h4>DO</h4>
+            <ul>
+              <li>Jede Eingabe <strong>am Server</strong> prüfen</li>
+              <li>Preise, Rollen und Berechtigungen am Server bestimmen</li>
+              <li>Prüfungen im Frontend nur als Komfort für den Benutzer sehen</li>
+            </ul>
+          </div>
+          <div class="dont-box">
+            <h4>DON'T</h4>
+            <ul>
+              <li>Einen Preis aus einem versteckten Formularfeld übernehmen</li>
+              <li>Admin-Buttons nur ausblenden statt den Zugriff am Server zu sperren</li>
+              <li>Geheimnisse (API-Keys) im Frontend-Code ablegen</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>5 — Grundprinzipien sicherer Software</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Prinzip</th><th>Bedeutung</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Defense in Depth</strong></td><td>Mehrere unabhängige Schutzschichten; fällt eine aus, greift die nächste (z.&nbsp;B. Eingabeprüfung <em>und</em> Prepared Statements <em>und</em> eingeschränkter Datenbank-User).</td></tr>
+              <tr><td><strong>Least Privilege</strong></td><td>Jede Person und jede Komponente bekommt nur die Rechte, die sie wirklich braucht (Lektion 2.4).</td></tr>
+              <tr><td><strong>Secure by Default</strong></td><td>Die Standardeinstellung ist die sichere: Neue Endpunkte sind geschützt, neue Benutzer haben minimale Rechte.</td></tr>
+              <tr><td><strong>Fail Securely</strong></td><td>Im Fehlerfall wird der Zugriff verweigert, nicht erlaubt; Fehlermeldungen verraten keine internen Details.</td></tr>
+              <tr><td><strong>Keep it simple</strong></td><td>Einfacher, verständlicher Code hat weniger Lücken. Keine eigene Kryptografie erfinden – bewährte Bibliotheken verwenden.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>6 — OWASP und die OWASP Top 10</h2>
+        <p>
+          Das <strong>Open Worldwide Application Security Project (OWASP)</strong> ist eine gemeinnützige
+          Organisation, die frei verfügbare Leitfäden, Werkzeuge und Standards zur Sicherheit von
+          Webanwendungen veröffentlicht. Am bekanntesten ist die <strong>OWASP Top 10</strong>: eine
+          Liste der zehn kritischsten Risikokategorien für Webanwendungen, die alle paar Jahre auf Basis
+          realer Daten aktualisiert wird.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>OWASP Top 10 (2025)</th><th>Im Kurs</th></tr></thead>
+            <tbody>
+              <tr><td>A01 Broken Access Control</td><td>2.4, 2.7</td></tr>
+              <tr><td>A02 Security Misconfiguration</td><td>2.7, 2.8</td></tr>
+              <tr><td>A03 Software Supply Chain Failures</td><td>2.8</td></tr>
+              <tr><td>A04 Cryptographic Failures</td><td>1.2, 1.4</td></tr>
+              <tr><td>A05 Injection</td><td>2.5, 2.6</td></tr>
+              <tr><td>A06 Insecure Design</td><td>durchgehend</td></tr>
+              <tr><td>A07 Authentication Failures</td><td>1.2–1.4, 2.1–2.3</td></tr>
+              <tr><td>A08 Software or Data Integrity Failures</td><td>2.5, 2.8</td></tr>
+              <tr><td>A09 Security Logging and Alerting Failures</td><td>2.8</td></tr>
+              <tr><td>A10 Mishandling of Exceptional Conditions</td><td>2.7, 2.8</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout callout-info">
+  <div class="callout-icon">&#8505;</div>
+  <div class="callout-body">
+    <div class="callout-title">Weitere OWASP-Ressourcen</div>
+    <p>Die <strong>OWASP Cheat Sheet Series</strong> enthält kurze, praxisnahe Anleitungen zu fast jedem
+          Thema dieses Kurses. Der <strong>Application Security Verification Standard (ASVS)</strong> ist
+          ein ausführlicher Anforderungskatalog zum Prüfen einer Anwendung (Lektion 2.8).</p>
+  </div>
+</div>
+      </section>
+
+      <section class="section section-fehler">
+        <h2>Häufige Fehler</h2>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: Security erst am Ende einplanen</div>
+  <p>Kurz vor dem Release fällt auf, dass jeder eingeloggte Benutzer alle Daten sehen kann. Die Berechtigungsprüfung nachträglich in jede Funktion einzubauen ist aufwendig und fehleranfällig.</p>
+          <p class="fehler-fix">Sicherheitsanforderungen (Wer darf was? Welche Daten sind sensibel?) schon beim Entwurf festlegen und von Anfang an mitentwickeln.</p>
+</div>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: Prüfung nur im Frontend</div>
+  <p>Das Formular erlaubt nur Mengen von 1 bis 10 – ein Angreifer schickt per Postman die Menge −5 und erhält eine Gutschrift.</p>
+          <p class="fehler-fix">Validierung im Frontend dient nur dem Komfort. Jede Regel muss zusätzlich am Server geprüft werden.</p>
+</div>
+        <div class="fehler-item">
+  <div class="fehler-title">Fehler: „Eingeloggt“ mit „berechtigt“ verwechseln</div>
+  <p>Die API prüft nur, ob ein gültiges Login vorliegt, aber nicht, ob die angefragten Daten zu diesem Benutzer gehören.</p>
+          <p class="fehler-fix">Authentication und Authorization getrennt denken: Nach dem „Wer bist du?“ folgt bei jedem Zugriff das „Darfst du das?“.</p>
+</div>
+      </section>
+
+      <section class="section section-aufgaben">
+        <h2>Aufgaben</h2>
+        <div class="aufgaben-list">
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 1</span>
+    <span class="aufgabe-title">AuthN oder AuthZ?</span>
+  </div>
+  <p>Ordne zu, ob es sich um Authentication oder Authorization handelt, und begründe kurz:</p>
+            <ol>
+              <li>Eine App fragt nach einem sechsstelligen Code aus einer Authenticator-App.</li>
+              <li>Nur Lehrkräfte dürfen Noten eintragen.</li>
+              <li>Ein Benutzer meldet sich mit seinem Google-Konto an.</li>
+              <li>Eine Schülerin darf nur ihre eigenen Abgaben sehen.</li>
+              <li>Die API antwortet mit Status 403.</li>
+            </ol>
+</div>
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 2</span>
+    <span class="aufgabe-title">Schutzziele zuordnen</span>
+  </div>
+  <p>Ein Online-Shop wird angegriffen: (a) Kreditkartendaten werden ausgelesen, (b) während des Black Friday ist der Shop stundenlang nicht erreichbar, (c) Bewertungen werden heimlich verändert. Welches Schutzziel ist jeweils verletzt?</p>
+</div>
+          <div class="aufgabe">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Aufgabe 3</span>
+    <span class="aufgabe-title">Vertrauensgrenze finden</span>
+  </div>
+  <p>Skizziere eine Web-App deiner Wahl (Frontend, Backend, Datenbank) und markiere die Vertrauensgrenze. Liste mindestens fünf Daten auf, die über diese Grenze kommen und daher am Server geprüft werden müssen.</p>
+</div>
+          <div class="aufgabe aufgabe-bonus">
+  <div class="aufgabe-header">
+    <span class="aufgabe-num">Bonus</span>
+    <span class="aufgabe-title">OWASP Top 10 lesen</span>
+  </div>
+  <p>Wähle auf <strong>owasp.org/Top10</strong> zwei Kategorien aus. Fasse jeweils in drei Sätzen zusammen, worum es geht, und nenne ein konkretes Beispiel aus einer Web-App, die du kennst.</p>
+</div>
+        </div>
+      </section>
+
+      <section class="section section-quiz">
+        <h2>Wissenskontrolle</h2>
+        <div class="quiz" id="quiz-1">
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 1</span> Welche Frage beantwortet die <strong>Authorization</strong>?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Wer bist du?</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-1"> <span>Was darfst du?</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Ist die Verbindung verschlüsselt?</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Ist der Server erreichbar?</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Authorization entscheidet, welche Ressourcen und Funktionen eine bereits authentifizierte Person verwenden darf. „Wer bist du?“ ist die Frage der Authentication, Verschlüsselung und Erreichbarkeit sind andere Themen.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 2</span> Ein eingeloggter Benutzer ruft eine Admin-Seite auf, für die er keine Rechte hat. Welcher Statuscode passt?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>401 Unauthorized</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-2"> <span>403 Forbidden</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>404 Not Found</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>500 Internal Server Error</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Der Benutzer ist authentifiziert, aber nicht berechtigt – das ist 403. 401 bedeutet trotz des Namens „nicht (gültig) authentifiziert“. Manche Anwendungen antworten bewusst mit 404, um die Existenz der Ressource zu verbergen; der fachlich passende Code ist aber 403.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 3</span> Ein Angreifer ändert über die DevTools den Preis in einem versteckten Formularfeld von 99 € auf 1 €. Welches Schutzziel ist bedroht und welches Prinzip wurde verletzt?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>Verfügbarkeit – Defense in Depth</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-3"> <span>Integrität – Never trust the client</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>Vertraulichkeit – Least Privilege</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>Vertraulichkeit – Secure by Default</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Die Bestelldaten werden unerlaubt verändert (Integrität). Die Ursache: Der Server vertraut einem Wert, der vom Client kommt. Preise müssen immer am Server aus der Datenbank bestimmt werden.</div>
+  </div>
+  <div class="quiz-frage" data-multi="0">
+    <p class="quiz-q"><span class="quiz-num">Frage 4</span> Was ist die <strong>OWASP Top 10</strong>?</p>
+    <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Ein Gesetz, das Mindeststandards für Websites vorschreibt</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Eine Liste der zehn sichersten Web-Frameworks</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-4"> <span>Eine regelmäßig aktualisierte Liste der kritischsten Risikokategorien für Webanwendungen</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Ein Werkzeug, das Webanwendungen automatisch absichert</span></label></li>
+    </ul>
+    <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
+    <p class="quiz-feedback" hidden></p>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Die OWASP Top 10 ist ein Awareness-Dokument einer gemeinnützigen Organisation. Sie ist weder Gesetz noch Werkzeug, dient aber weltweit als Orientierung, welche Fehler am häufigsten zu Sicherheitsproblemen führen.</div>
+  </div>
+  <div class="quiz-summary"><span class="quiz-score"></span><button type="button" class="quiz-reset">Zur&uuml;cksetzen</button></div>
+</div>
+      </section>
+
+    </div>
+
+    <nav class="lesson-nav">
+      <a class="nav-btn" href="index.html">&larr; Kurs&uuml;bersicht</a>
+      <span class="nav-center-info">Lektion 1.1</span>
+      <a class="nav-btn primary" href="1.2-passwoerter.html">Lektion 1.2: Passwörter sicher speichern &rarr;</a>
+    </nav>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>
+    const ham = document.getElementById('hamburger');
+    const sb = document.getElementById('sidebar');
+    const ov = document.getElementById('overlay');
+    ham.addEventListener('click', () => { sb.classList.toggle('open'); ov.classList.toggle('visible'); });
+    ov.addEventListener('click', () => { sb.classList.remove('open'); ov.classList.remove('visible'); });
+    const cur = window.location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.nav-link').forEach(l => {
+      if (l.getAttribute('href') === cur) l.classList.add('active');
+    });
+    const themeBtn = document.getElementById('theme-toggle');
+    const applyTheme = (t) => {
+      document.documentElement.setAttribute('data-theme', t);
+      if (themeBtn) themeBtn.innerHTML = t === 'dark' ? '&#9728;' : '&#9790;';
+    };
+    applyTheme(localStorage.getItem('kurs-theme') || 'dark');
+    setTimeout(() => document.documentElement.classList.add('theme-transitions'), 50);
+    if (themeBtn) themeBtn.addEventListener('click', () => {
+      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('kurs-theme', next);
+      applyTheme(next);
+    });
+    hljs.highlightAll();
+  </script>
+  <script>
+    document.querySelectorAll('.quiz').forEach((quiz) => {
+      const fragen = [...quiz.querySelectorAll('.quiz-frage')];
+      const score = quiz.querySelector('.quiz-score');
+      const update = () => {
+        const done = fragen.filter((f) => f.dataset.state).length;
+        const ok = fragen.filter((f) => f.dataset.state === 'ok').length;
+        score.textContent = done === 0
+          ? fragen.length + ' Fragen – wähle eine Antwort und prüfe sie.'
+          : ok + ' von ' + fragen.length + ' richtig'
+            + (done < fragen.length ? ' (' + done + ' von ' + fragen.length + ' bearbeitet)' : '');
+      };
+      fragen.forEach((f) => {
+        const inputs = [...f.querySelectorAll('input')];
+        const check = f.querySelector('.quiz-check');
+        const reveal = f.querySelector('.quiz-reveal');
+        const fb = f.querySelector('.quiz-feedback');
+        const exp = f.querySelector('.quiz-erklaerung');
+        inputs.forEach((i) => i.addEventListener('change', () => {
+          check.disabled = !inputs.some((x) => x.checked);
+        }));
+        const finish = (graded) => {
+          let allOk = true;
+          f.querySelectorAll('.quiz-opt').forEach((li) => {
+            const input = li.querySelector('input');
+            const corr = li.dataset.correct === '1';
+            if (corr !== input.checked) allOk = false;
+            if (corr) li.classList.add('opt-correct');
+            else if (input.checked) li.classList.add('opt-wrong');
+            input.disabled = true;
+          });
+          f.dataset.state = !graded ? 'shown' : (allOk ? 'ok' : 'wrong');
+          fb.className = 'quiz-feedback fb-' + f.dataset.state;
+          fb.textContent = !graded ? 'Lösung angezeigt.'
+            : (allOk ? '✔ Richtig!' : '✘ Leider nicht ganz – die richtige Lösung ist markiert.');
+          fb.hidden = false;
+          exp.hidden = false;
+          check.disabled = true;
+          reveal.disabled = true;
+          update();
+        };
+        check.addEventListener('click', () => finish(true));
+        reveal.addEventListener('click', () => finish(false));
+      });
+      quiz.querySelector('.quiz-reset').addEventListener('click', () => {
+        fragen.forEach((f) => {
+          delete f.dataset.state;
+          f.querySelectorAll('.quiz-opt').forEach((li) => li.classList.remove('opt-correct', 'opt-wrong'));
+          f.querySelectorAll('input').forEach((i) => { i.checked = false; i.disabled = false; });
+          f.querySelector('.quiz-check').disabled = true;
+          f.querySelector('.quiz-reveal').disabled = false;
+          f.querySelector('.quiz-feedback').hidden = true;
+          f.querySelector('.quiz-erklaerung').hidden = true;
+        });
+        update();
+      });
+      update();
+    });
+  </script>
+</body>
+
+</html>
