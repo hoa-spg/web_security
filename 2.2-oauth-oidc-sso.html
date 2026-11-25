@@ -536,8 +536,9 @@ export async function GET(request: Request) {
       </section>
 
       <section class="section section-quiz">
-        <h2>Wissenskontrolle</h2>
-        <div class="quiz" id="quiz-1">
+        <details class="quiz-box">
+<summary><h2>Quiz</h2><span class="quiz-box-hint">7 Fragen &middot; zum Aufklappen klicken</span></summary>
+<div class="quiz" id="quiz-1">
   <div class="quiz-frage" data-multi="0">
     <p class="quiz-q"><span class="quiz-num">Frage 1</span> Welches Problem löst OAuth 2.0 in erster Linie?</p>
     <ul class="quiz-opts">
@@ -625,6 +626,7 @@ export async function GET(request: Request) {
   </div>
   <div class="quiz-summary"><span class="quiz-score"></span><button type="button" class="quiz-reset">Zur&uuml;cksetzen</button></div>
 </div>
+</details>
       </section>
 
     </div>

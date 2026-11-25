@@ -655,8 +655,9 @@ export async function safeFetch(rawUrl: string): Promise&lt;Response&gt; {
       </section>
 
       <section class="section section-quiz">
-        <h2>Wissenskontrolle</h2>
-        <div class="quiz" id="quiz-1">
+        <details class="quiz-box">
+<summary><h2>Quiz</h2><span class="quiz-box-hint">6 Fragen &middot; zum Aufklappen klicken</span></summary>
+<div class="quiz" id="quiz-1">
   <div class="quiz-frage" data-multi="0">
     <p class="quiz-q"><span class="quiz-num">Frage 1</span> Was identifiziert ein <strong>API Key</strong> typischerweise?</p>
     <ul class="quiz-opts">
@@ -733,6 +734,7 @@ export async function safeFetch(rawUrl: string): Promise&lt;Response&gt; {
   </div>
   <div class="quiz-summary"><span class="quiz-score"></span><button type="button" class="quiz-reset">Zur&uuml;cksetzen</button></div>
 </div>
+</details>
       </section>
 
     </div>

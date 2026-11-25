@@ -660,8 +660,9 @@ export default async function KontoPage() {
       </section>
 
       <section class="section section-quiz">
-        <h2>Wissenskontrolle</h2>
-        <div class="quiz" id="quiz-1">
+        <details class="quiz-box">
+<summary><h2>Quiz</h2><span class="quiz-box-hint">6 Fragen &middot; zum Aufklappen klicken</span></summary>
+<div class="quiz" id="quiz-1">
   <div class="quiz-frage" data-multi="0">
     <p class="quiz-q"><span class="quiz-num">Frage 1</span> Warum speichert die Tabelle <code>sessions</code> den SHA-256-Hash des Tokens statt des Tokens selbst?</p>
     <ul class="quiz-opts">
@@ -738,6 +739,7 @@ export default async function KontoPage() {
   </div>
   <div class="quiz-summary"><span class="quiz-score"></span><button type="button" class="quiz-reset">Zur&uuml;cksetzen</button></div>
 </div>
+</details>
       </section>
 
     </div>
