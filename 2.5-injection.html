@@ -638,10 +638,10 @@ export async function GET(_request: Request, { params }: RouteParams) {
   <div class="quiz-frage" data-multi="0">
     <p class="quiz-q"><span class="quiz-num">Frage 1</span> Was haben alle Injection-Angriffe gemeinsam?</p>
     <ul class="quiz-opts">
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Sie funktionieren nur bei Datenbanken</span></label></li>
-      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-1"> <span>Benutzereingaben werden von einem Interpreter als Befehl statt als Daten verstanden</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Sie benötigen ein gestohlenes Passwort</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Sie funktionieren nur bei Datenbanken</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Sie lassen sich durch HTTPS verhindern</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-1"> <span>Benutzereingaben werden von einem Interpreter als Befehl statt als Daten verstanden</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
@@ -650,10 +650,10 @@ export async function GET(_request: Request, { params }: RouteParams) {
   <div class="quiz-frage" data-multi="0">
     <p class="quiz-q"><span class="quiz-num">Frage 2</span> Welche Maßnahme ist der <strong>Hauptschutz</strong> gegen SQL Injection?</p>
     <ul class="quiz-opts">
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Alle Apostrophe aus Eingaben entfernen</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Eingabefelder im Frontend auf 20 Zeichen begrenzen</span></label></li>
-      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-2"> <span>Prepared Statements bzw. parametrisierte Abfragen</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Die Datenbank auf einem anderen Server betreiben</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Alle Apostrophe aus Eingaben entfernen</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-2"> <span>Prepared Statements bzw. parametrisierte Abfragen</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
@@ -662,10 +662,10 @@ export async function GET(_request: Request, { params }: RouteParams) {
   <div class="quiz-frage" data-multi="0">
     <p class="quiz-q"><span class="quiz-num">Frage 3</span> Warum ist eine <strong>Allowlist</strong> robuster als eine Denylist?</p>
     <ul class="quiz-opts">
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>Weil sie schneller ausgeführt wird</span></label></li>
-      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-3"> <span>Weil alles, was nicht ausdrücklich erlaubt ist, abgelehnt wird – auch unbekannte Angriffsvarianten</span></label></li>
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>Weil sie keine Wartung braucht</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>Weil sie gefährliche Zeichen automatisch kodiert</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-3"> <span>Weil alles, was nicht ausdrücklich erlaubt ist, abgelehnt wird – auch unbekannte Angriffsvarianten</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>Weil sie schneller ausgeführt wird</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>Weil sie keine Wartung braucht</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
@@ -687,10 +687,10 @@ export async function GET(_request: Request, { params }: RouteParams) {
   <div class="quiz-frage" data-multi="0">
     <p class="quiz-q"><span class="quiz-num">Frage 5</span> Welche Aussage zu Datei-Uploads ist richtig?</p>
     <ul class="quiz-opts">
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span>Der vom Browser gemeldete Content-Type ist zuverlässig und reicht zur Prüfung</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span>Der Originaldateiname sollte beibehalten werden, damit Benutzer ihre Dateien wiederfinden</span></label></li>
-      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-5"> <span>Dateien sollten mit zufälligem Namen außerhalb des Webordners gespeichert werden</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span>SVG-Dateien sind als Bilder immer ungefährlich</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-5"> <span>Dateien sollten mit zufälligem Namen außerhalb des Webordners gespeichert werden</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span>Der vom Browser gemeldete Content-Type ist zuverlässig und reicht zur Prüfung</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
@@ -699,10 +699,10 @@ export async function GET(_request: Request, { params }: RouteParams) {
   <div class="quiz-frage" data-multi="0">
     <p class="quiz-q"><span class="quiz-num">Frage 6</span> Welche Drizzle-Abfrage ist anfällig für SQL Injection, wenn <code>q</code> vom Benutzer kommt?</p>
     <ul class="quiz-opts">
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span><code>db.select().from(flights).where(eq(flights.airport, q))</code></span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span><code>db.all(sql`SELECT * FROM flights WHERE airport = ${q}`)</code></span></label></li>
       <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-6"> <span><code>db.all(sql.raw(`SELECT * FROM flights WHERE airport = '${q}'`))</code></span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span><code>db.select().from(flights).where(like(flights.airport, `%${q}%`))</code></span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span><code>db.select().from(flights).where(eq(flights.airport, q))</code></span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>

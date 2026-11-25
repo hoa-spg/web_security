@@ -675,9 +675,9 @@ export async function safeFetch(rawUrl: string): Promise&lt;Response&gt; {
   <div class="quiz-frage" data-multi="0">
     <p class="quiz-q"><span class="quiz-num">Frage 1</span> Was identifiziert ein <strong>API Key</strong> typischerweise?</p>
     <ul class="quiz-opts">
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Einen einzelnen Benutzer mit seinen Rollen</span></label></li>
       <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-1"> <span>Eine aufrufende Anwendung oder ein Projekt</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Eine Browser-Session</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Einen einzelnen Benutzer mit seinen Rollen</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Einen Datensatz in der Datenbank</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
@@ -687,10 +687,10 @@ export async function safeFetch(rawUrl: string): Promise&lt;Response&gt; {
   <div class="quiz-frage" data-multi="0">
     <p class="quiz-q"><span class="quiz-num">Frage 2</span> Welche Aussage über CORS ist richtig?</p>
     <ul class="quiz-opts">
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>CORS schützt eine API vor Zugriffen durch Skripte und Tools wie curl</span></label></li>
-      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-2"> <span>CORS erlaubt dem Server, die Same-Origin Policy des Browsers für bestimmte Origins zu lockern</span></label></li>
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>CORS ersetzt die Authentifizierung</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span><code>Access-Control-Allow-Origin: *</code> ist zusammen mit Credentials die sicherste Einstellung</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>CORS schützt eine API vor Zugriffen durch Skripte und Tools wie curl</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>CORS ersetzt die Authentifizierung</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-2"> <span>CORS erlaubt dem Server, die Same-Origin Policy des Browsers für bestimmte Origins zu lockern</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
@@ -699,10 +699,10 @@ export async function safeFetch(rawUrl: string): Promise&lt;Response&gt; {
   <div class="quiz-frage" data-multi="0">
     <p class="quiz-q"><span class="quiz-num">Frage 3</span> Mit welchem Statuscode antwortet eine API, wenn ein Client sein Rate Limit überschreitet?</p>
     <ul class="quiz-opts">
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>401 Unauthorized</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>403 Forbidden</span></label></li>
-      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-3"> <span>429 Too Many Requests</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>503 Service Unavailable</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>401 Unauthorized</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-3"> <span>429 Too Many Requests</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
@@ -711,10 +711,10 @@ export async function safeFetch(rawUrl: string): Promise&lt;Response&gt; {
   <div class="quiz-frage" data-multi="0">
     <p class="quiz-q"><span class="quiz-num">Frage 4</span> Eine Funktion „Bild von URL importieren“ ruft auf Wunsch eines Angreifers eine interne Admin-Oberfläche auf. Welche Schwachstelle ist das, und was hilft?</p>
     <ul class="quiz-opts">
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Open Redirect – relative Pfade verwenden</span></label></li>
       <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-4"> <span>SSRF – Allowlist für Ziele und Blockieren interner Adressbereiche nach der DNS-Auflösung</span></label></li>
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>CSRF – SameSite-Cookies setzen</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>XSS – Output Encoding</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>CSRF – SameSite-Cookies setzen</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Open Redirect – relative Pfade verwenden</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
@@ -724,10 +724,10 @@ export async function safeFetch(rawUrl: string): Promise&lt;Response&gt; {
     <p class="quiz-q"><span class="quiz-num">Frage 5</span> Was gehört zu sicherem Error Handling in einer API?</p>
     <p class="quiz-hint">Mehrere Antworten sind richtig.</p>
     <ul class="quiz-opts">
-      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-5"> <span>Eine allgemeine Fehlermeldung mit Fehler-ID an den Client, Details nur ins interne Log</span></label></li>
-      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-5"> <span>Den Stacktrace mitschicken, damit Entwickler Fehler schneller finden</span></label></li>
       <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-5"> <span>Bei einem Fehler in der Berechtigungsprüfung den Zugriff verweigern</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-5"> <span>Unterschiedliche Meldungen für „Benutzer unbekannt“ und „Passwort falsch“</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-5"> <span>Den Stacktrace mitschicken, damit Entwickler Fehler schneller finden</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-5"> <span>Eine allgemeine Fehlermeldung mit Fehler-ID an den Client, Details nur ins interne Log</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
@@ -738,8 +738,8 @@ export async function safeFetch(rawUrl: string): Promise&lt;Response&gt; {
     <p class="quiz-hint">Mehrere Antworten sind richtig.</p>
     <ul class="quiz-opts">
       <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-6"> <span><code>audience</code></span></label></li>
-      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-6"> <span><code>algorithms: ['RS256']</code></span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-6"> <span><code>Vary: Origin</code></span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-6"> <span><code>algorithms: ['RS256']</code></span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-6"> <span><code>Retry-After</code></span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>

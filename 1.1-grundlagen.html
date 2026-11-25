@@ -330,9 +330,9 @@
     <p class="quiz-q"><span class="quiz-num">Frage 1</span> Welche Frage beantwortet die <strong>Authorization</strong>?</p>
     <ul class="quiz-opts">
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Wer bist du?</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Ist der Server erreichbar?</span></label></li>
       <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-1"> <span>Was darfst du?</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Ist die Verbindung verschlüsselt?</span></label></li>
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Ist der Server erreichbar?</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
@@ -341,10 +341,10 @@
   <div class="quiz-frage" data-multi="0">
     <p class="quiz-q"><span class="quiz-num">Frage 2</span> Ein eingeloggter Benutzer ruft eine Admin-Seite auf, für die er keine Rechte hat. Welcher Statuscode passt?</p>
     <ul class="quiz-opts">
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>401 Unauthorized</span></label></li>
-      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-2"> <span>403 Forbidden</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>404 Not Found</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-2"> <span>403 Forbidden</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>500 Internal Server Error</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>401 Unauthorized</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
@@ -354,25 +354,26 @@
     <p class="quiz-q"><span class="quiz-num">Frage 3</span> Ein Angreifer ändert über die DevTools den Preis in einem versteckten Formularfeld von 99 € auf 1 €. Welches Schutzziel ist bedroht und welches Prinzip wurde verletzt?</p>
     <ul class="quiz-opts">
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>Verfügbarkeit – Defense in Depth</span></label></li>
-      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-3"> <span>Integrität – Never trust the client</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>Vertraulichkeit – Least Privilege</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>Vertraulichkeit – Secure by Default</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-3"> <span>Integrität – Never trust the client</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
     <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Die Bestelldaten werden unerlaubt verändert (Integrität). Die Ursache: Der Server vertraut einem Wert, der vom Client kommt. Preise müssen immer am Server aus der Datenbank bestimmt werden.</div>
   </div>
-  <div class="quiz-frage" data-multi="0">
-    <p class="quiz-q"><span class="quiz-num">Frage 4</span> Was ist die <strong>OWASP Top 10</strong>?</p>
+  <div class="quiz-frage" data-multi="1">
+    <p class="quiz-q"><span class="quiz-num">Frage 4</span> Was trifft auf die <strong>OWASP Top 10</strong> zu?</p>
+    <p class="quiz-hint">Mehrere Antworten sind richtig.</p>
     <ul class="quiz-opts">
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Ein Gesetz, das Mindeststandards für Websites vorschreibt</span></label></li>
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Eine Liste der zehn sichersten Web-Frameworks</span></label></li>
-      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-4"> <span>Eine regelmäßig aktualisierte Liste der kritischsten Risikokategorien für Webanwendungen</span></label></li>
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Ein Werkzeug, das Webanwendungen automatisch absichert</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-4"> <span>Eine regelmäßig aktualisierte Liste der kritischsten Risikokategorien für Webanwendungen</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-4"> <span>Ein Werkzeug, das Webanwendungen automatisch absichert</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-4"> <span>Sie dient als Orientierung, welche Risiken man beim Entwickeln zuerst angehen sollte</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-4"> <span>Ein Gesetz, das Mindeststandards für Websites vorschreibt</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
-    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Die OWASP Top 10 ist ein Awareness-Dokument einer gemeinnützigen Organisation. Sie ist weder Gesetz noch Werkzeug, dient aber weltweit als Orientierung, welche Fehler am häufigsten zu Sicherheitsproblemen führen.</div>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Die OWASP Top 10 ist eine regelmäßig aktualisierte Liste der kritischsten Risikokategorien für Webanwendungen. Sie dient als Orientierung, welche Risiken man beim Entwickeln zuerst angehen sollte. Sie ist weder Gesetz noch Werkzeug und bewertet keine Frameworks.</div>
   </div>
   <div class="quiz-summary"><span class="quiz-score"></span><button type="button" class="quiz-reset">Zur&uuml;cksetzen</button></div>
 </div>

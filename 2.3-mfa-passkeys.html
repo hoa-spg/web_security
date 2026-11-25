@@ -798,45 +798,47 @@ export default function AddPasskeyButton() {
     <p class="quiz-q"><span class="quiz-num">Frage 1</span> Welche Kombination ist eine echte Multi-Factor Authentication?</p>
     <ul class="quiz-opts">
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Passwort und Sicherheitsfrage</span></label></li>
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Zwei verschiedene Passwörter</span></label></li>
-      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-1"> <span>Passwort und Code aus einer Authenticator-App</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Benutzername und Passwort</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-1"> <span>Passwort und Code aus einer Authenticator-App</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Zwei verschiedene Passwörter</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
     <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> MFA verlangt Faktoren aus verschiedenen Kategorien. Passwort (Wissen) und Authenticator-App auf dem Handy (Besitz) erfüllen das. Sicherheitsfrage und zweites Passwort sind ebenfalls Wissen, der Benutzername ist gar kein Geheimnis.</div>
   </div>
-  <div class="quiz-frage" data-multi="0">
+  <div class="quiz-frage" data-multi="1">
     <p class="quiz-q"><span class="quiz-num">Frage 2</span> Wie erzeugen Authenticator-App und Server bei TOTP denselben Code?</p>
+    <p class="quiz-hint">Mehrere Antworten sind richtig.</p>
     <ul class="quiz-opts">
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Der Server schickt den Code per Push an die App</span></label></li>
-      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-2"> <span>Beide berechnen ihn aus einem gemeinsamen Geheimnis und der aktuellen Zeit</span></label></li>
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Die App liest den Code aus einer SMS</span></label></li>
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Der Code wird aus dem Passwort-Hash abgeleitet</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-2"> <span>Beide berechnen ihn aus einem gemeinsamen Geheimnis und der aktuellen Zeit</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-2"> <span>Es wird kein Code übertragen – deshalb funktioniert die App auch ohne Internetverbindung</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-2"> <span>Der Code wird aus dem Passwort-Hash abgeleitet</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-2"> <span>Der Server schickt den Code per Push an die App</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
-    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Bei der Einrichtung wird per QR-Code ein Shared Secret übertragen. Danach rechnen App und Server unabhängig mit demselben Geheimnis und demselben 30-Sekunden-Zeitschritt – die App braucht dafür keine Verbindung.</div>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Beide berechnen den Code aus einem gemeinsamen Geheimnis (beim Einrichten per QR-Code übertragen) und der aktuellen Zeit. Es wird nichts übertragen – deshalb funktioniert die App auch ohne Internetverbindung.</div>
   </div>
-  <div class="quiz-frage" data-multi="0">
-    <p class="quiz-q"><span class="quiz-num">Frage 3</span> Warum gelten Passkeys als <strong>phishing-resistent</strong>, TOTP-Codes aber nicht?</p>
+  <div class="quiz-frage" data-multi="1">
+    <p class="quiz-q"><span class="quiz-num">Frage 3</span> Warum gelten Passkeys als phishing-resistent, TOTP-Codes aber nicht?</p>
+    <p class="quiz-hint">Mehrere Antworten sind richtig.</p>
     <ul class="quiz-opts">
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>Passkeys sind länger als sechs Ziffern</span></label></li>
-      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-3"> <span>Die Signatur ist an die Domain gebunden, die der Browser prüft – auf einer gefälschten Domain gibt es keinen passenden Schlüssel</span></label></li>
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>Passkeys werden per SMS verschickt</span></label></li>
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>TOTP-Codes werden unverschlüsselt gespeichert</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-3"> <span>Passkeys werden per SMS verschickt</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-3"> <span>Die Signatur ist an die Domain gebunden, die der Browser prüft – auf einer gefälschten Domain gibt es keinen passenden Schlüssel</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-3"> <span>Passkeys sind länger als sechs Ziffern</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-3"> <span>Einen TOTP-Code kann man auf einer gefälschten Seite eintippen, und der Angreifer verwendet ihn sofort weiter</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
-    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Einen TOTP-Code kann ein Mensch auf jeder beliebigen Seite eintippen, und eine Phishing-Seite reicht ihn in Echtzeit weiter. Bei WebAuthn übergibt der Browser die tatsächliche Domain; der Authenticator signiert nur für die Domain, für die der Schlüssel erstellt wurde.</div>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Beim Passkey ist die Signatur an die Domain gebunden, die der Browser prüft – auf einer gefälschten Domain gibt es keinen passenden Schlüssel. Einen TOTP-Code dagegen kann man auf einer gefälschten Seite eintippen, und der Angreifer verwendet ihn sofort auf der echten Seite.</div>
   </div>
   <div class="quiz-frage" data-multi="0">
     <p class="quiz-q"><span class="quiz-num">Frage 4</span> Was speichert der Server bei WebAuthn/Passkeys für einen Benutzer?</p>
     <ul class="quiz-opts">
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Den privaten Schlüssel</span></label></li>
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Den Fingerabdruck des Benutzers</span></label></li>
       <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-4"> <span>Den öffentlichen Schlüssel</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Ein gemeinsames Geheimnis wie bei TOTP</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Den Fingerabdruck des Benutzers</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
@@ -846,10 +848,10 @@ export default function AddPasskeyButton() {
     <p class="quiz-q"><span class="quiz-num">Frage 5</span> Ein Angreifer schickt einem Opfer nachts dutzende Push-Anfragen, bis es auf „Bestätigen“ tippt. Welche Gegenmaßnahmen helfen?</p>
     <p class="quiz-hint">Mehrere Antworten sind richtig.</p>
     <ul class="quiz-opts">
-      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-5"> <span>Number Matching</span></label></li>
       <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-5"> <span>Umstieg auf Passkeys oder Security Keys</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-5"> <span>Längere Passwörter</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-5"> <span>SMS-Codes statt Push</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-5"> <span>Number Matching</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
@@ -858,10 +860,10 @@ export default function AddPasskeyButton() {
   <div class="quiz-frage" data-multi="0">
     <p class="quiz-q"><span class="quiz-num">Frage 6</span> Warum wird das TOTP-Geheimnis verschlüsselt und nicht wie ein Passwort gehasht gespeichert?</p>
     <ul class="quiz-opts">
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span>Weil Verschlüsselung grundsätzlich sicherer ist als Hashing</span></label></li>
-      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-6"> <span>Weil der Server das Geheimnis im Klartext braucht, um die Codes zu berechnen</span></label></li>
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span>Weil die Authenticator-App den Hash nicht lesen kann</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span>Weil TOTP-Geheimnisse kürzer als Passwörter sind</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span>Weil Verschlüsselung grundsätzlich sicherer ist als Hashing</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span>Weil die Authenticator-App den Hash nicht lesen kann</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-6"> <span>Weil der Server das Geheimnis im Klartext braucht, um die Codes zu berechnen</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>

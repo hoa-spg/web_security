@@ -568,9 +568,9 @@ test('Passagier kommt nicht in die Benutzerverwaltung', async ({ page }) =&gt; {
   <div class="quiz-frage" data-multi="0">
     <p class="quiz-q"><span class="quiz-num">Frage 1</span> Ein API Key wurde versehentlich in ein öffentliches Repository gepusht. Was ist der wichtigste erste Schritt?</p>
     <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Den Key in einer neuen Datei mit anderem Namen speichern</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Den Commit löschen und das Repository auf privat stellen</span></label></li>
       <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-1"> <span>Den Key sofort widerrufen und durch einen neuen ersetzen</span></label></li>
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Den Key in einer neuen Datei mit anderem Namen speichern</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Abwarten, ob der Key missbraucht wird</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
@@ -582,8 +582,8 @@ test('Passagier kommt nicht in die Benutzerverwaltung', async ({ page }) =&gt; {
     <ul class="quiz-opts">
       <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-2"> <span>SAST</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>DAST</span></label></li>
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Penetrationstest</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Rate Limiting</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Penetrationstest</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
@@ -592,10 +592,10 @@ test('Passagier kommt nicht in die Benutzerverwaltung', async ({ page }) =&gt; {
   <div class="quiz-frage" data-multi="0">
     <p class="quiz-q"><span class="quiz-num">Frage 3</span> Was gehört <strong>nicht</strong> in ein Security-Log?</p>
     <ul class="quiz-opts">
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>Zeitpunkt und Benutzer eines fehlgeschlagenen Logins</span></label></li>
-      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-3"> <span>Das beim fehlgeschlagenen Login eingegebene Passwort</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>Eine verweigerte Admin-Aktion</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>Zeitpunkt und Benutzer eines fehlgeschlagenen Logins</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>Die Correlation ID einer Anfrage</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-3"> <span>Das beim fehlgeschlagenen Login eingegebene Passwort</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
@@ -604,10 +604,10 @@ test('Passagier kommt nicht in die Benutzerverwaltung', async ({ page }) =&gt; {
   <div class="quiz-frage" data-multi="0">
     <p class="quiz-q"><span class="quiz-num">Frage 4</span> Wozu dient der Header <code>Strict-Transport-Security</code> (HSTS)?</p>
     <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Er begrenzt die Anzahl der Anfragen</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Er verhindert Clickjacking</span></label></li>
       <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-4"> <span>Der Browser verwendet für die Domain künftig nur noch HTTPS</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Er legt erlaubte Skriptquellen fest</span></label></li>
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Er begrenzt die Anzahl der Anfragen</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
@@ -617,10 +617,10 @@ test('Passagier kommt nicht in die Benutzerverwaltung', async ({ page }) =&gt; {
     <p class="quiz-q"><span class="quiz-num">Frage 5</span> Welche Aussagen zum <strong>OWASP ASVS</strong> sind richtig?</p>
     <p class="quiz-hint">Mehrere Antworten sind richtig.</p>
     <ul class="quiz-opts">
-      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-5"> <span>Er ist ein Katalog überprüfbarer Sicherheitsanforderungen</span></label></li>
       <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-5"> <span>Er unterscheidet drei Stufen je nach Schutzbedarf der Anwendung</span></label></li>
-      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-5"> <span>Er ist ein automatischer Schwachstellen-Scanner</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-5"> <span>Er ersetzt die OWASP Top 10 und ist nur für Banken gedacht</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-5"> <span>Er ist ein automatischer Schwachstellen-Scanner</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-5"> <span>Er ist ein Katalog überprüfbarer Sicherheitsanforderungen</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
@@ -629,9 +629,9 @@ test('Passagier kommt nicht in die Benutzerverwaltung', async ({ page }) =&gt; {
   <div class="quiz-frage" data-multi="0">
     <p class="quiz-q"><span class="quiz-num">Frage 6</span> Warum steht die Content Security Policy des FlugBoards in der Middleware und nicht in <code>next.config.ts</code> bei den anderen Headern?</p>
     <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span>Weil die CSP nur für API-Routen gilt</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span>Weil <code>next.config.ts</code> keine Header setzen kann</span></label></li>
       <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-6"> <span>Weil der Nonce für jede Antwort neu erzeugt werden muss</span></label></li>
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span>Weil die CSP nur für API-Routen gilt</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span>Weil die Middleware schneller ist</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>

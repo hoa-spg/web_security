@@ -370,26 +370,27 @@
         <details class="quiz-box">
 <summary><h2>Quiz</h2><span class="quiz-box-hint">6 Fragen &middot; zum Aufklappen klicken</span></summary>
 <div class="quiz" id="quiz-1">
-  <div class="quiz-frage" data-multi="0">
+  <div class="quiz-frage" data-multi="1">
     <p class="quiz-q"><span class="quiz-num">Frage 1</span> Warum werden Passwörter gehasht und nicht verschlüsselt gespeichert?</p>
+    <p class="quiz-hint">Mehrere Antworten sind richtig.</p>
     <ul class="quiz-opts">
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Weil Hashes weniger Speicherplatz brauchen</span></label></li>
-      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-1"> <span>Weil Verschlüsselung umkehrbar ist – wer den Schlüssel erbeutet, kann alle Passwörter lesen</span></label></li>
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Weil Verschlüsselung über HTTPS nicht erlaubt ist</span></label></li>
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Weil man Hashes bei „Passwort vergessen“ zurückrechnen kann</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-1"> <span>Weil Hashes weniger Speicherplatz brauchen</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-1"> <span>Weil ein Hash nicht umkehrbar ist – zum Prüfen hasht man die Eingabe und vergleicht die Hashes</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-1"> <span>Weil Verschlüsselung umkehrbar ist – wer den Schlüssel erbeutet, kann alle Passwörter lesen</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-1"> <span>Weil man Hashes bei „Passwort vergessen“ zurückrechnen kann</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
-    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Ein Hash ist eine Einwegfunktion: Der Server muss das Passwort nie wieder kennen, er vergleicht nur Hashes. Verschlüsselte Passwörter sind dagegen mit dem Schlüssel wiederherstellbar – und der liegt meist auf demselben Server. Hashes lassen sich gerade <em>nicht</em> zurückrechnen; deshalb gibt es einen Reset statt einer Passwort-Erinnerung.</div>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Verschlüsselung ist umkehrbar – wer den Schlüssel erbeutet, kann alle Passwörter lesen. Ein Hash ist nicht umkehrbar: Zum Prüfen hasht der Server die Eingabe und vergleicht die beiden Hashes. Bei „Passwort vergessen“ setzt man deshalb ein neues Passwort, statt das alte zurückzurechnen.</div>
   </div>
   <div class="quiz-frage" data-multi="1">
     <p class="quiz-q"><span class="quiz-num">Frage 2</span> Wogegen schützt ein <strong>Salt</strong>?</p>
     <p class="quiz-hint">Mehrere Antworten sind richtig.</p>
     <ul class="quiz-opts">
       <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-2"> <span>Gegen Rainbow Tables, also vorberechnete Tabellen von Hash zu Passwort</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-2"> <span>Gegen das Mitlesen des Passworts bei der Übertragung</span></label></li>
       <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-2"> <span>Dagegen, dass gleiche Passwörter zu gleichen Hashes führen</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-2"> <span>Gegen schwache Passwörter wie „123456“</span></label></li>
-      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-2"> <span>Gegen das Mitlesen des Passworts bei der Übertragung</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
@@ -398,33 +399,34 @@
   <div class="quiz-frage" data-multi="0">
     <p class="quiz-q"><span class="quiz-num">Frage 3</span> Welches Verfahren ist für neue Anwendungen die erste Wahl zum Speichern von Passwörtern?</p>
     <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-3"> <span>Argon2id</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>SHA-256</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>MD5 mit Salt</span></label></li>
-      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-3"> <span>Argon2id</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-3"> <span>AES-256</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
     <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Argon2id ist absichtlich langsam und speicherintensiv, beides einstellbar. SHA-256 und MD5 sind zu schnell (MD5 zudem gebrochen), AES ist ein Verschlüsselungsverfahren und damit umkehrbar.</div>
   </div>
-  <div class="quiz-frage" data-multi="0">
-    <p class="quiz-q"><span class="quiz-num">Frage 4</span> Was unterscheidet einen <strong>Pepper</strong> von einem Salt?</p>
+  <div class="quiz-frage" data-multi="1">
+    <p class="quiz-q"><span class="quiz-num">Frage 4</span> Was trifft auf einen <strong>Pepper</strong> im Vergleich zu einem Salt zu?</p>
+    <p class="quiz-hint">Mehrere Antworten sind richtig.</p>
     <ul class="quiz-opts">
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Der Pepper wird für jedes Passwort neu erzeugt</span></label></li>
-      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-4"> <span>Der Pepper ist geheim und wird außerhalb der Datenbank gespeichert</span></label></li>
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Der Pepper ersetzt das Hashing-Verfahren</span></label></li>
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Der Pepper wird im Cookie des Benutzers gespeichert</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-4"> <span>Der Pepper ist geheim und wird außerhalb der Datenbank gespeichert</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-4"> <span>Erbeutet ein Angreifer nur die Datenbank, fehlt ihm der Pepper zum Knacken der Hashes</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-4"> <span>Der Pepper wird für jedes Passwort neu erzeugt</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-4"> <span>Der Pepper wird im Cookie des Benutzers gespeichert</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
-    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Der Salt ist pro Passwort verschieden und öffentlich (neben dem Hash gespeichert). Der Pepper ist ein gemeinsames Geheimnis außerhalb der Datenbank, z.&nbsp;B. in einem Secrets Manager. Er ist eine Zusatzschicht, kein Ersatz für Argon2 oder bcrypt.</div>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Der Pepper ist ein geheimer Wert, der außerhalb der Datenbank gespeichert wird (z. B. in einer Umgebungsvariable). Erbeutet ein Angreifer nur die Datenbank, fehlt ihm der Pepper zum Knacken der Hashes. Der Salt dagegen ist pro Passwort neu und darf in der Datenbank stehen.</div>
   </div>
   <div class="quiz-frage" data-multi="0">
     <p class="quiz-q"><span class="quiz-num">Frage 5</span> Welche Passwortregel entspricht den aktuellen NIST-Empfehlungen?</p>
     <ul class="quiz-opts">
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span>Alle 90 Tage muss das Passwort geändert werden</span></label></li>
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span>Das Passwort muss Groß- und Kleinbuchstaben, Ziffern und Sonderzeichen enthalten</span></label></li>
       <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-5"> <span>Lange Passwörter erlauben und gegen Listen geleakter Passwörter prüfen</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span>Das Passwort muss Groß- und Kleinbuchstaben, Ziffern und Sonderzeichen enthalten</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span>Einfügen in das Passwortfeld verbieten</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>

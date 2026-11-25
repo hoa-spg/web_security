@@ -612,10 +612,10 @@ export async function updateProfile(formData: FormData) {
   <div class="quiz-frage" data-multi="0">
     <p class="quiz-q"><span class="quiz-num">Frage 1</span> In einem System gilt: „Lehrkräfte dürfen nur die Noten ihrer eigenen Klassen und nur bis Semesterende ändern.“ Welches Modell bildet das am direktesten ab?</p>
     <ul class="quiz-opts">
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>ACL</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>RBAC</span></label></li>
-      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-1"> <span>ABAC</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>Keines, das ist nicht modellierbar</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-1"> <span>ACL</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-1"> <span>ABAC</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
@@ -624,10 +624,10 @@ export async function updateProfile(formData: FormData) {
   <div class="quiz-frage" data-multi="0">
     <p class="quiz-q"><span class="quiz-num">Frage 2</span> Ein Benutzer ändert in der URL <code>/orders/1001</code> auf <code>/orders/1002</code> und sieht eine fremde Bestellung. Wie nennt man das?</p>
     <ul class="quiz-opts">
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Mass Assignment</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Vertikale Privilege Escalation durch SQL Injection</span></label></li>
       <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-2"> <span>IDOR – eine horizontale Privilege Escalation</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Session Fixation</span></label></li>
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-2"> <span>Mass Assignment</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
@@ -637,46 +637,48 @@ export async function updateProfile(formData: FormData) {
     <p class="quiz-q"><span class="quiz-num">Frage 3</span> Welche Maßnahmen verhindern IDOR wirksam?</p>
     <p class="quiz-hint">Mehrere Antworten sind richtig.</p>
     <ul class="quiz-opts">
-      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-3"> <span>Bei jedem Zugriff prüfen, ob das Objekt dem anfragenden Benutzer gehört bzw. er berechtigt ist</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-3"> <span>Nur zufällige UUIDs statt fortlaufender IDs verwenden, ohne weitere Prüfung</span></label></li>
       <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-3"> <span>Datenbankabfragen grundsätzlich auf den angemeldeten Benutzer bzw. Mandanten einschränken</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-3"> <span>Den Link zur Bestellung im Frontend ausblenden</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-3"> <span>Bei jedem Zugriff prüfen, ob das Objekt dem anfragenden Benutzer gehört bzw. er berechtigt ist</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
     <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Wirksam ist nur die serverseitige Prüfung auf Ressourcenebene, am besten direkt in der Abfrage. UUIDs erschweren das Raten, sind aber kein Schutz, wenn eine ID bekannt wird. Ausblenden im Frontend hindert niemanden daran, die Anfrage selbst zu schicken.</div>
   </div>
-  <div class="quiz-frage" data-multi="0">
-    <p class="quiz-q"><span class="quiz-num">Frage 4</span> Ein Profilformular schickt Name und E-Mail. Ein Angreifer ergänzt <code>role=admin</code> und ist danach Administrator. Welche Schwachstelle liegt vor?</p>
+  <div class="quiz-frage" data-multi="1">
+    <p class="quiz-q"><span class="quiz-num">Frage 4</span> Ein Profilformular schickt Name und E-Mail. Ein Angreifer ergänzt <code>role=admin</code> und ist danach Administrator. Welche Schwachstelle liegt vor, und was hilft?</p>
+    <p class="quiz-hint">Mehrere Antworten sind richtig.</p>
     <ul class="quiz-opts">
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Cross-Site Scripting</span></label></li>
-      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-4"> <span>Mass Assignment</span></label></li>
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Credential Stuffing</span></label></li>
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-4"> <span>Path Traversal</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-4"> <span>Cross-Site Scripting</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-4"> <span>Abhilfe: Nur ausdrücklich erlaubte Felder (Allowlist) aus der Anfrage übernehmen</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-4"> <span>Credential Stuffing</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-4"> <span>Mass Assignment</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
-    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Der Server überträgt alle Felder der Anfrage ungefiltert auf das Benutzerobjekt. Lösung: Pro Anwendungsfall eine Allowlist erlaubter Felder bzw. eigene Ein-/Ausgabeobjekte (DTOs) verwenden.</div>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Das ist Mass Assignment: Der Server übernimmt ungeprüft alle Felder der Anfrage. Abhilfe schafft eine Allowlist – nur ausdrücklich erlaubte Felder wie Name und E-Mail werden übernommen. Mit XSS, Credential Stuffing oder Path Traversal hat das nichts zu tun.</div>
   </div>
-  <div class="quiz-frage" data-multi="0">
+  <div class="quiz-frage" data-multi="1">
     <p class="quiz-q"><span class="quiz-num">Frage 5</span> Was bedeutet <strong>Deny by Default</strong>?</p>
+    <p class="quiz-hint">Mehrere Antworten sind richtig.</p>
     <ul class="quiz-opts">
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span>Alle Anfragen werden standardmäßig abgelehnt, auch berechtigte</span></label></li>
-      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-5"> <span>Zugriff ist verboten, solange er nicht ausdrücklich erlaubt wurde</span></label></li>
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span>Fehlgeschlagene Logins führen zur dauerhaften Sperre</span></label></li>
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-5"> <span>Der Server antwortet immer mit 404</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-5"> <span>Zugriff ist verboten, solange er nicht ausdrücklich erlaubt wurde</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-5"> <span>Alle Anfragen werden standardmäßig abgelehnt, auch berechtigte</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="checkbox" name="quiz-1-5"> <span>Eine neue Route ist zunächst geschützt, bis man den Zugriff bewusst freigibt</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="checkbox" name="quiz-1-5"> <span>Fehlgeschlagene Logins führen zur dauerhaften Sperre</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
-    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Deny by Default heißt: Ohne passende Erlaubnis keine Freigabe. So führt ein vergessener Check bei einem neuen Endpunkt zu einem Fehler beim Testen statt zu einem Datenleck.</div>
+    <div class="quiz-erklaerung" hidden><strong>Erkl&auml;rung:</strong> Zugriff ist verboten, solange er nicht ausdrücklich erlaubt wurde. Eine neue Route ist dadurch zunächst geschützt, bis man den Zugriff bewusst freigibt. Berechtigte Anfragen werden natürlich durchgelassen.</div>
   </div>
   <div class="quiz-frage" data-multi="0">
     <p class="quiz-q"><span class="quiz-num">Frage 6</span> Die Middleware des FlugBoards lässt eine Anfrage durch, weil ein Cookie <code>session</code> existiert. Was folgt daraus?</p>
     <ul class="quiz-opts">
-      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span>Der Benutzer ist angemeldet und darf alles</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span>Der Benutzer ist angemeldet, die Rolle muss aber noch geprüft werden</span></label></li>
-      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-6"> <span>Noch gar nichts Sicheres – Gültigkeit der Session und Berechtigungen prüfen Seite bzw. Route Handler</span></label></li>
+      <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span>Der Benutzer ist angemeldet und darf alles</span></label></li>
       <li class="quiz-opt" data-correct="0"><label><input type="radio" name="quiz-1-6"> <span>Die Anfrage stammt sicher nicht von einer fremden Website</span></label></li>
+      <li class="quiz-opt" data-correct="1"><label><input type="radio" name="quiz-1-6"> <span>Noch gar nichts Sicheres – Gültigkeit der Session und Berechtigungen prüfen Seite bzw. Route Handler</span></label></li>
     </ul>
     <div class="quiz-actions"><button type="button" class="quiz-check" disabled>Antwort pr&uuml;fen</button><button type="button" class="quiz-reveal">L&ouml;sung zeigen</button></div>
     <p class="quiz-feedback" hidden></p>
