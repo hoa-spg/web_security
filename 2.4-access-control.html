@@ -49,6 +49,9 @@
         <a class="nav-link" href="2.8-secure-development.html"><span class="ln">2.8</span>Secure Development &amp; OWASP</a>
       </div>
     </nav>
+    <div class="sidebar-footer">
+      <a class="sidebar-home" href="https://hoa-spg.github.io/">&larr; Kursseite</a>
+    </div>
   </aside>
 
   <main class="main-content">
@@ -539,7 +542,9 @@ export async function updateProfile(formData: FormData) {
       </section>
 
       <section class="section section-fehler">
-        <h2>Häufige Fehler</h2>
+<details class="fold-box">
+<summary><h2>Häufige Fehler</h2><span class="quiz-box-hint">3 Fehler &middot; zum Aufklappen klicken</span></summary>
+<div class="fold-body">
         <div class="fehler-item">
   <div class="fehler-title">Fehler: Nur Funktionsebene geprüft</div>
   <p>Der Endpunkt „Rechnung herunterladen“ prüft korrekt, dass der Benutzer angemeldet und Kunde ist – lädt dann aber jede Rechnung, deren ID übergeben wird.</p>
@@ -555,10 +560,14 @@ export async function updateProfile(formData: FormData) {
   <p>Jeder Endpunkt muss einzeln mit einer Prüfung versehen werden. Beim neuen Export-Endpunkt wurde sie vergessen – alle Daten sind öffentlich abrufbar.</p>
           <p class="fehler-fix">Deny by Default: Alle Endpunkte sind zentral geschützt; öffentliche Endpunkte müssen ausdrücklich freigegeben werden.</p>
 </div>
+</div>
+</details>
       </section>
 
       <section class="section section-aufgaben">
-        <h2>Aufgaben</h2>
+<details class="fold-box">
+<summary><h2>Aufgaben</h2><span class="quiz-box-hint">3 Aufgaben + Bonus &middot; zum Aufklappen klicken</span></summary>
+<div class="fold-body">
         <div class="aufgaben-list">
           <div class="aufgabe">
   <div class="aufgabe-header">
@@ -589,6 +598,8 @@ export async function updateProfile(formData: FormData) {
   <p>Formuliere für den Endpunkt „Bestellung anzeigen“ fünf Testfälle in Worten (Benutzer, Anfrage, erwartetes Ergebnis inkl. Statuscode), die zusammen sicherstellen, dass weder IDOR noch vertikale Eskalation möglich ist.</p>
 </div>
         </div>
+</div>
+</details>
       </section>
 
       <section class="section section-quiz">

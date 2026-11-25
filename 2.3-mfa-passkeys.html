@@ -49,6 +49,9 @@
         <a class="nav-link" href="2.8-secure-development.html"><span class="ln">2.8</span>Secure Development &amp; OWASP</a>
       </div>
     </nav>
+    <div class="sidebar-footer">
+      <a class="sidebar-home" href="https://hoa-spg.github.io/">&larr; Kursseite</a>
+    </div>
   </aside>
 
   <main class="main-content">
@@ -724,7 +727,9 @@ export default function AddPasskeyButton() {
       </section>
 
       <section class="section section-fehler">
-        <h2>Häufige Fehler</h2>
+<details class="fold-box">
+<summary><h2>Häufige Fehler</h2><span class="quiz-box-hint">3 Fehler &middot; zum Aufklappen klicken</span></summary>
+<div class="fold-body">
         <div class="fehler-item">
   <div class="fehler-title">Fehler: Unsichere Hintertür beim Recovery</div>
   <p>Die Anwendung verlangt Passkeys, erlaubt aber bei „Zugang verloren“ eine Wiederherstellung per SMS-Code. Angreifer nehmen einfach diesen Weg.</p>
@@ -740,10 +745,14 @@ export default function AddPasskeyButton() {
   <p>Als „2FA“ wird nach dem Passwort zusätzlich eine Sicherheitsfrage gestellt. Beides ist Wissen und kann z.&nbsp;B. über dieselbe Phishing-Seite abgegriffen werden.</p>
           <p class="fehler-fix">Faktoren aus verschiedenen Kategorien kombinieren, idealerweise einen Passkey oder Security Key.</p>
 </div>
+</div>
+</details>
       </section>
 
       <section class="section section-aufgaben">
-        <h2>Aufgaben</h2>
+<details class="fold-box">
+<summary><h2>Aufgaben</h2><span class="quiz-box-hint">3 Aufgaben + Bonus &middot; zum Aufklappen klicken</span></summary>
+<div class="fold-body">
         <div class="aufgaben-list">
           <div class="aufgabe">
   <div class="aufgabe-header">
@@ -774,6 +783,8 @@ export default function AddPasskeyButton() {
   <p>Setze die Anmeldung mit Passkey um (siehe Callout in Abschnitt 9): zwei Route Handler unter <code>/api/passkeys/login/…</code> und einen Button auf der Login-Seite. Aktualisiere nach jeder Anmeldung den gespeicherten <code>counter</code>. Teste vorher die Abläufe auf <strong>webauthn.io</strong>.</p>
 </div>
         </div>
+</div>
+</details>
       </section>
 
       <section class="section section-quiz">

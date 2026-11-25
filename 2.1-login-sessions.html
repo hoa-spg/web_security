@@ -49,6 +49,9 @@
         <a class="nav-link" href="2.8-secure-development.html"><span class="ln">2.8</span>Secure Development &amp; OWASP</a>
       </div>
     </nav>
+    <div class="sidebar-footer">
+      <a class="sidebar-home" href="https://hoa-spg.github.io/">&larr; Kursseite</a>
+    </div>
   </aside>
 
   <main class="main-content">
@@ -607,7 +610,9 @@ export default async function KontoPage() {
       </section>
 
       <section class="section section-fehler">
-        <h2>Häufige Fehler</h2>
+<details class="fold-box">
+<summary><h2>Häufige Fehler</h2><span class="quiz-box-hint">3 Fehler &middot; zum Aufklappen klicken</span></summary>
+<div class="fold-body">
         <div class="fehler-item">
   <div class="fehler-title">Fehler: Cookie in einer Server Component setzen</div>
   <p>Die Konto-Seite soll die Session verlängern und ruft <code>cookies().set(…)</code> auf. Next.js wirft den Fehler „Cookies can only be modified in a Server Action or Route Handler“.</p>
@@ -623,10 +628,14 @@ export default async function KontoPage() {
   <p>Das Passwortfeld hat <code>minLength={15}</code>, die Server Action prüft nichts. Mit den DevTools entfernt man das Attribut und registriert sich mit „123“.</p>
           <p class="fehler-fix">Jede Regel am Server prüfen – hier mit dem Zod-Schema in der Server Action.</p>
 </div>
+</div>
+</details>
       </section>
 
       <section class="section section-aufgaben">
-        <h2>Aufgaben</h2>
+<details class="fold-box">
+<summary><h2>Aufgaben</h2><span class="quiz-box-hint">3 Aufgaben + Bonus &middot; zum Aufklappen klicken</span></summary>
+<div class="fold-body">
         <div class="aufgaben-list">
           <div class="aufgabe">
   <div class="aufgabe-header">
@@ -657,6 +666,8 @@ export default async function KontoPage() {
   <p>Ergänze die Tabelle <code>sessions</code> um <code>lastSeenAt</code>. Eine Session soll nach 30 Minuten ohne Aktivität ungültig werden, unabhängig vom Absolute Timeout. Überlege, wo <code>lastSeenAt</code> aktualisiert werden kann, wenn Server Components keine Cookies setzen dürfen (Tipp: Die Datenbank darf eine Server Component sehr wohl ändern).</p>
 </div>
         </div>
+</div>
+</details>
       </section>
 
       <section class="section section-quiz">

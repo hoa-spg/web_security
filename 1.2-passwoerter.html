@@ -49,6 +49,9 @@
         <a class="nav-link" href="2.8-secure-development.html"><span class="ln">2.8</span>Secure Development &amp; OWASP</a>
       </div>
     </nav>
+    <div class="sidebar-footer">
+      <a class="sidebar-home" href="https://hoa-spg.github.io/">&larr; Kursseite</a>
+    </div>
   </aside>
 
   <main class="main-content">
@@ -300,7 +303,9 @@
       </section>
 
       <section class="section section-fehler">
-        <h2>Häufige Fehler</h2>
+<details class="fold-box">
+<summary><h2>Häufige Fehler</h2><span class="quiz-box-hint">3 Fehler &middot; zum Aufklappen klicken</span></summary>
+<div class="fold-body">
         <div class="fehler-item">
   <div class="fehler-title">Fehler: Schneller Hash ohne Salt</div>
   <p>Passwörter werden mit SHA-256 gehasht. Nach einem Leak sind die meisten Hashes innerhalb von Stunden geknackt, gleiche Passwörter erkennt man sofort an gleichen Hashes.</p>
@@ -316,10 +321,14 @@
   <p>Zur Fehlersuche wird jeder Request protokolliert – inklusive Login-Daten. Wer Zugriff auf die Logs hat, kennt alle Passwörter.</p>
           <p class="fehler-fix">Sensible Felder (Passwörter, Tokens) vor dem Protokollieren entfernen oder maskieren.</p>
 </div>
+</div>
+</details>
       </section>
 
       <section class="section section-aufgaben">
-        <h2>Aufgaben</h2>
+<details class="fold-box">
+<summary><h2>Aufgaben</h2><span class="quiz-box-hint">3 Aufgaben + Bonus &middot; zum Aufklappen klicken</span></summary>
+<div class="fold-body">
         <div class="aufgaben-list">
           <div class="aufgabe">
   <div class="aufgabe-header">
@@ -350,6 +359,8 @@
   <p>Ein Passwort besteht aus 8 Kleinbuchstaben (26 Möglichkeiten pro Stelle). Wie lange dauert es im schlimmsten Fall, alle Kombinationen zu testen, (a) bei 10 Milliarden SHA-256-Hashes pro Sekunde, (b) bei 10 Argon2-Hashes pro Sekunde? Wiederhole die Rechnung für eine Passphrase aus 4 zufälligen Wörtern aus einer Liste von 7776 Wörtern.</p>
 </div>
         </div>
+</div>
+</details>
       </section>
 
       <section class="section section-quiz">

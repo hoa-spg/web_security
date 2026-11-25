@@ -49,6 +49,9 @@
         <a class="nav-link" href="2.8-secure-development.html"><span class="ln">2.8</span>Secure Development &amp; OWASP</a>
       </div>
     </nav>
+    <div class="sidebar-footer">
+      <a class="sidebar-home" href="https://hoa-spg.github.io/">&larr; Kursseite</a>
+    </div>
   </aside>
 
   <main class="main-content">
@@ -249,7 +252,9 @@
       </section>
 
       <section class="section section-fehler">
-        <h2>Häufige Fehler</h2>
+<details class="fold-box">
+<summary><h2>Häufige Fehler</h2><span class="quiz-box-hint">3 Fehler &middot; zum Aufklappen klicken</span></summary>
+<div class="fold-body">
         <div class="fehler-item">
   <div class="fehler-title">Fehler: Security erst am Ende einplanen</div>
   <p>Kurz vor dem Release fällt auf, dass jeder eingeloggte Benutzer alle Daten sehen kann. Die Berechtigungsprüfung nachträglich in jede Funktion einzubauen ist aufwendig und fehleranfällig.</p>
@@ -265,10 +270,14 @@
   <p>Die API prüft nur, ob ein gültiges Login vorliegt, aber nicht, ob die angefragten Daten zu diesem Benutzer gehören.</p>
           <p class="fehler-fix">Authentication und Authorization getrennt denken: Nach dem „Wer bist du?“ folgt bei jedem Zugriff das „Darfst du das?“.</p>
 </div>
+</div>
+</details>
       </section>
 
       <section class="section section-aufgaben">
-        <h2>Aufgaben</h2>
+<details class="fold-box">
+<summary><h2>Aufgaben</h2><span class="quiz-box-hint">3 Aufgaben + Bonus &middot; zum Aufklappen klicken</span></summary>
+<div class="fold-body">
         <div class="aufgaben-list">
           <div class="aufgabe">
   <div class="aufgabe-header">
@@ -306,6 +315,8 @@
   <p>Wähle auf <strong>owasp.org/Top10</strong> zwei Kategorien aus. Fasse jeweils in drei Sätzen zusammen, worum es geht, und nenne ein konkretes Beispiel aus einer Web-App, die du kennst.</p>
 </div>
         </div>
+</div>
+</details>
       </section>
 
       <section class="section section-quiz">

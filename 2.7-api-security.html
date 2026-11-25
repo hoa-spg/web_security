@@ -49,6 +49,9 @@
         <a class="nav-link" href="2.8-secure-development.html"><span class="ln">2.8</span>Secure Development &amp; OWASP</a>
       </div>
     </nav>
+    <div class="sidebar-footer">
+      <a class="sidebar-home" href="https://hoa-spg.github.io/">&larr; Kursseite</a>
+    </div>
   </aside>
 
   <main class="main-content">
@@ -602,7 +605,9 @@ export async function safeFetch(rawUrl: string): Promise&lt;Response&gt; {
       </section>
 
       <section class="section section-fehler">
-        <h2>Häufige Fehler</h2>
+<details class="fold-box">
+<summary><h2>Häufige Fehler</h2><span class="quiz-box-hint">3 Fehler &middot; zum Aufklappen klicken</span></summary>
+<div class="fold-body">
         <div class="fehler-item">
   <div class="fehler-title">Fehler: API Key im Frontend</div>
   <p>Eine Single-Page-App ruft eine kostenpflichtige KI- oder Karten-API direkt mit dem API Key auf. Der Key ist in den DevTools sichtbar und wird massenhaft missbraucht – die Rechnung zahlt der Betreiber.</p>
@@ -618,10 +623,14 @@ export async function safeFetch(rawUrl: string): Promise&lt;Response&gt; {
   <p>Bei einem Fehler liefert die API den kompletten Stacktrace mit Framework-Version, Dateipfaden und SQL-Abfrage aus.</p>
           <p class="fehler-fix">Allgemeine Fehlermeldung mit Fehler-ID an den Client, Details nur ins Log; Debug-Modus in Produktion deaktivieren.</p>
 </div>
+</div>
+</details>
       </section>
 
       <section class="section section-aufgaben">
-        <h2>Aufgaben</h2>
+<details class="fold-box">
+<summary><h2>Aufgaben</h2><span class="quiz-box-hint">3 Aufgaben + Bonus &middot; zum Aufklappen klicken</span></summary>
+<div class="fold-body">
         <div class="aufgaben-list">
           <div class="aufgabe">
   <div class="aufgabe-header">
@@ -652,6 +661,8 @@ export async function safeFetch(rawUrl: string): Promise&lt;Response&gt; {
   <p>Eine Lernplattform soll eine Funktion „Link-Vorschau“ bekommen, die Titel und Bild einer eingegebenen URL anzeigt. Beschreibe, wie ein Angreifer diese Funktion für SSRF missbrauchen könnte, und entwirf ein Schutzkonzept.</p>
 </div>
         </div>
+</div>
+</details>
       </section>
 
       <section class="section section-quiz">

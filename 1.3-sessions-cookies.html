@@ -49,6 +49,9 @@
         <a class="nav-link" href="2.8-secure-development.html"><span class="ln">2.8</span>Secure Development &amp; OWASP</a>
       </div>
     </nav>
+    <div class="sidebar-footer">
+      <a class="sidebar-home" href="https://hoa-spg.github.io/">&larr; Kursseite</a>
+    </div>
   </aside>
 
   <main class="main-content">
@@ -240,7 +243,9 @@
       </section>
 
       <section class="section section-fehler">
-        <h2>Häufige Fehler</h2>
+<details class="fold-box">
+<summary><h2>Häufige Fehler</h2><span class="quiz-box-hint">3 Fehler &middot; zum Aufklappen klicken</span></summary>
+<div class="fold-body">
         <div class="fehler-item">
   <div class="fehler-title">Fehler: Logout löscht nur das Cookie</div>
   <p>Beim Logout wird nur das Cookie im Browser entfernt. Wer die Session-ID vorher kopiert hat, kann sie weiter verwenden, weil sie am Server noch gültig ist.</p>
@@ -256,10 +261,14 @@
   <p>Die Session wird schon beim ersten Besuch angelegt und nach dem Login einfach weiterverwendet – die Anwendung ist anfällig für Session Fixation.</p>
           <p class="fehler-fix">Nach erfolgreichem Login immer eine neue Session-ID vergeben.</p>
 </div>
+</div>
+</details>
       </section>
 
       <section class="section section-aufgaben">
-        <h2>Aufgaben</h2>
+<details class="fold-box">
+<summary><h2>Aufgaben</h2><span class="quiz-box-hint">3 Aufgaben + Bonus &middot; zum Aufklappen klicken</span></summary>
+<div class="fold-body">
         <div class="aufgaben-list">
           <div class="aufgabe">
   <div class="aufgabe-header">
@@ -295,6 +304,8 @@
   <p>Erkläre einer Mitschülerin den Unterschied zwischen Session Hijacking und Session Fixation mithilfe einer Analogie aus dem Alltag (z.&nbsp;B. Garderobenmarke, Hotelschlüssel).</p>
 </div>
         </div>
+</div>
+</details>
       </section>
 
       <section class="section section-quiz">

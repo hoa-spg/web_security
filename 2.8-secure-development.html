@@ -49,6 +49,9 @@
         <a class="nav-link" href="2.8-secure-development.html"><span class="ln">2.8</span>Secure Development &amp; OWASP</a>
       </div>
     </nav>
+    <div class="sidebar-footer">
+      <a class="sidebar-home" href="https://hoa-spg.github.io/">&larr; Kursseite</a>
+    </div>
   </aside>
 
   <main class="main-content">
@@ -495,7 +498,9 @@ test('Passagier kommt nicht in die Benutzerverwaltung', async ({ page }) =&gt; {
       </section>
 
       <section class="section section-fehler">
-        <h2>Häufige Fehler</h2>
+<details class="fold-box">
+<summary><h2>Häufige Fehler</h2><span class="quiz-box-hint">3 Fehler &middot; zum Aufklappen klicken</span></summary>
+<div class="fold-body">
         <div class="fehler-item">
   <div class="fehler-title">Fehler: .env-Datei eingecheckt</div>
   <p>Die <code>.env</code> mit dem Datenbank-Passwort wurde mit dem ersten Commit hochgeladen und erst später in <code>.gitignore</code> eingetragen. In der Git-Historie ist sie weiterhin abrufbar.</p>
@@ -511,10 +516,14 @@ test('Passagier kommt nicht in die Benutzerverwaltung', async ({ page }) =&gt; {
   <p>Ein Angreifer probiert wochenlang Passwörter durch. Weil nur erfolgreiche Logins protokolliert werden, fällt es niemandem auf.</p>
           <p class="fehler-fix">Sicherheitsrelevante Ereignisse – gerade Fehlschläge – protokollieren und bei Auffälligkeiten alarmieren.</p>
 </div>
+</div>
+</details>
       </section>
 
       <section class="section section-aufgaben">
-        <h2>Aufgaben</h2>
+<details class="fold-box">
+<summary><h2>Aufgaben</h2><span class="quiz-box-hint">3 Aufgaben + Bonus &middot; zum Aufklappen klicken</span></summary>
+<div class="fold-body">
         <div class="aufgaben-list">
           <div class="aufgabe">
   <div class="aufgabe-header">
@@ -545,6 +554,8 @@ test('Passagier kommt nicht in die Benutzerverwaltung', async ({ page }) =&gt; {
   <p>Öffne den <strong>OWASP ASVS</strong> und suche das Kapitel zur Authentifizierung. Wähle fünf Level-1-Anforderungen aus, ordne sie den Lektionen dieses Kurses zu und erkläre jeweils in einem Satz, wie man ihre Einhaltung prüfen könnte.</p>
 </div>
         </div>
+</div>
+</details>
       </section>
 
       <section class="section section-quiz">

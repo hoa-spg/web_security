@@ -49,6 +49,9 @@
         <a class="nav-link" href="2.8-secure-development.html"><span class="ln">2.8</span>Secure Development &amp; OWASP</a>
       </div>
     </nav>
+    <div class="sidebar-footer">
+      <a class="sidebar-home" href="https://hoa-spg.github.io/">&larr; Kursseite</a>
+    </div>
   </aside>
 
   <main class="main-content">
@@ -481,7 +484,9 @@ export function isSameOrigin(request: Request): boolean {
       </section>
 
       <section class="section section-fehler">
-        <h2>Häufige Fehler</h2>
+<details class="fold-box">
+<summary><h2>Häufige Fehler</h2><span class="quiz-box-hint">3 Fehler &middot; zum Aufklappen klicken</span></summary>
+<div class="fold-body">
         <div class="fehler-item">
   <div class="fehler-title">Fehler: innerHTML für Benutzerdaten</div>
   <p>Eine Single-Page-App zeigt den Benutzernamen mit <code>innerHTML</code> an. Ein Benutzer nennt sich so, dass sein Name ein HTML-Element mit Event-Handler enthält – Stored XSS bei allen, die seinen Namen sehen.</p>
@@ -497,10 +502,14 @@ export function isSameOrigin(request: Request): boolean {
   <p>Ein Beitrag wird über einen Link <code>/posts/17/delete</code> gelöscht. Ein Bild mit dieser Adresse auf einer fremden Seite reicht, um Beiträge angemeldeter Benutzer zu löschen.</p>
           <p class="fehler-fix">Zustandsändernde Aktionen nur mit POST/PUT/DELETE, kombiniert mit SameSite-Cookies und CSRF-Token.</p>
 </div>
+</div>
+</details>
       </section>
 
       <section class="section section-aufgaben">
-        <h2>Aufgaben</h2>
+<details class="fold-box">
+<summary><h2>Aufgaben</h2><span class="quiz-box-hint">3 Aufgaben + Bonus &middot; zum Aufklappen klicken</span></summary>
+<div class="fold-body">
         <div class="aufgaben-list">
           <div class="aufgabe">
   <div class="aufgabe-header">
@@ -531,6 +540,8 @@ export function isSameOrigin(request: Request): boolean {
   <p>Spiele das Lernspiel <strong>Google XSS Game</strong> oder ein XSS-Lab der <strong>PortSwigger Web Security Academy</strong>. Erkläre für ein gelöstes Level, welche Ausgabe nicht kodiert war und wie die korrekte Lösung im Code aussehen müsste (in Worten).</p>
 </div>
         </div>
+</div>
+</details>
       </section>
 
       <section class="section section-quiz">

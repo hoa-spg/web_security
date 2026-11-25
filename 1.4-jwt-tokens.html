@@ -49,6 +49,9 @@
         <a class="nav-link" href="2.8-secure-development.html"><span class="ln">2.8</span>Secure Development &amp; OWASP</a>
       </div>
     </nav>
+    <div class="sidebar-footer">
+      <a class="sidebar-home" href="https://hoa-spg.github.io/">&larr; Kursseite</a>
+    </div>
   </aside>
 
   <main class="main-content">
@@ -287,7 +290,9 @@
       </section>
 
       <section class="section section-fehler">
-        <h2>Häufige Fehler</h2>
+<details class="fold-box">
+<summary><h2>Häufige Fehler</h2><span class="quiz-box-hint">3 Fehler &middot; zum Aufklappen klicken</span></summary>
+<div class="fold-body">
         <div class="fehler-item">
   <div class="fehler-title">Fehler: Token wird nur dekodiert, nicht geprüft</div>
   <p>Die API liest die Rolle aus dem Payload, ohne die Signatur zu prüfen. Ein Angreifer ändert die Rolle auf „admin“ und erhält Vollzugriff.</p>
@@ -303,10 +308,14 @@
   <p>Um Refresh Tokens zu vermeiden, ist das Access Token einen Monat gültig. Ein gestohlenes Token kann so lange missbraucht werden – und lässt sich nicht widerrufen.</p>
           <p class="fehler-fix">Kurzlebige Access Tokens mit Refresh Tokens kombinieren, Refresh Tokens rotieren.</p>
 </div>
+</div>
+</details>
       </section>
 
       <section class="section section-aufgaben">
-        <h2>Aufgaben</h2>
+<details class="fold-box">
+<summary><h2>Aufgaben</h2><span class="quiz-box-hint">3 Aufgaben + Bonus &middot; zum Aufklappen klicken</span></summary>
+<div class="fold-body">
         <div class="aufgaben-list">
           <div class="aufgabe">
   <div class="aufgabe-header">
@@ -337,6 +346,8 @@
   <p>Ein Benutzer klickt bei einer JWT-basierten Anwendung auf „Abmelden“. Beschreibe, was im Browser und am Server passieren muss, damit ein vorher kopiertes Access Token und Refresh Token nicht mehr verwendet werden können.</p>
 </div>
         </div>
+</div>
+</details>
       </section>
 
       <section class="section section-quiz">

@@ -49,6 +49,9 @@
         <a class="nav-link" href="2.8-secure-development.html"><span class="ln">2.8</span>Secure Development &amp; OWASP</a>
       </div>
     </nav>
+    <div class="sidebar-footer">
+      <a class="sidebar-home" href="https://hoa-spg.github.io/">&larr; Kursseite</a>
+    </div>
   </aside>
 
   <main class="main-content">
@@ -483,7 +486,9 @@ export async function GET(request: Request) {
       </section>
 
       <section class="section section-fehler">
-        <h2>Häufige Fehler</h2>
+<details class="fold-box">
+<summary><h2>Häufige Fehler</h2><span class="quiz-box-hint">3 Fehler &middot; zum Aufklappen klicken</span></summary>
+<div class="fold-body">
         <div class="fehler-item">
   <div class="fehler-title">Fehler: Access Token als Login-Nachweis</div>
   <p>Die App betrachtet jeden als angemeldet, der irgendein gültiges Access Token vorlegt. Ein Angreifer verwendet ein Token, das eigentlich für eine ganz andere App ausgestellt wurde.</p>
@@ -499,10 +504,14 @@ export async function GET(request: Request) {
   <p>Eine App für Geburtstagserinnerungen fordert Lese- und Schreibzugriff auf E-Mails, Kontakte und Dateien an. Benutzer brechen ab – oder geben einer womöglich kompromittierten App viel zu viele Rechte.</p>
           <p class="fehler-fix">Nur die Scopes anfordern, die für die aktuelle Funktion nötig sind; weitere bei Bedarf später nachfordern.</p>
 </div>
+</div>
+</details>
       </section>
 
       <section class="section section-aufgaben">
-        <h2>Aufgaben</h2>
+<details class="fold-box">
+<summary><h2>Aufgaben</h2><span class="quiz-box-hint">3 Aufgaben + Bonus &middot; zum Aufklappen klicken</span></summary>
+<div class="fold-body">
         <div class="aufgaben-list">
           <div class="aufgabe">
   <div class="aufgabe-header">
@@ -533,6 +542,8 @@ export async function GET(request: Request) {
   <p>Deine Schule möchte für alle Dienste (Lernplattform, Mail, Bibliothek, Mensa-Bestellung) SSO einführen. Verfasse eine kurze Empfehlung mit Vor- und Nachteilen und nenne zwei Maßnahmen, die das Risiko eines übernommenen SSO-Kontos verringern.</p>
 </div>
         </div>
+</div>
+</details>
       </section>
 
       <section class="section section-quiz">

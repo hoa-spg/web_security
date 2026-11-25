@@ -49,6 +49,9 @@
         <a class="nav-link" href="2.8-secure-development.html"><span class="ln">2.8</span>Secure Development &amp; OWASP</a>
       </div>
     </nav>
+    <div class="sidebar-footer">
+      <a class="sidebar-home" href="https://hoa-spg.github.io/">&larr; Kursseite</a>
+    </div>
   </aside>
 
   <main class="main-content">
@@ -565,7 +568,9 @@ export async function GET(_request: Request, { params }: RouteParams) {
       </section>
 
       <section class="section section-fehler">
-        <h2>Häufige Fehler</h2>
+<details class="fold-box">
+<summary><h2>Häufige Fehler</h2><span class="quiz-box-hint">3 Fehler &middot; zum Aufklappen klicken</span></summary>
+<div class="fold-body">
         <div class="fehler-item">
   <div class="fehler-title">Fehler: SQL durch Zusammensetzen von Strings</div>
   <p>Eine Suchfunktion baut die Abfrage aus festem SQL-Text und dem Suchbegriff zusammen. Mit einem Apostroph im Suchbegriff lässt sich die Abfrage beliebig verändern.</p>
@@ -581,10 +586,14 @@ export async function GET(_request: Request, { params }: RouteParams) {
   <p>Hochgeladene Dateien werden mit ihrem Originalnamen im öffentlichen Ordner gespeichert. Eine hochgeladene Skriptdatei wird beim Aufruf vom Server ausgeführt.</p>
           <p class="fehler-fix">Zufällige Namen, Speicherung außerhalb des Webordners, Allowlist für Typen und Inhaltsprüfung.</p>
 </div>
+</div>
+</details>
       </section>
 
       <section class="section section-aufgaben">
-        <h2>Aufgaben</h2>
+<details class="fold-box">
+<summary><h2>Aufgaben</h2><span class="quiz-box-hint">3 Aufgaben + Bonus &middot; zum Aufklappen klicken</span></summary>
+<div class="fold-body">
         <div class="aufgaben-list">
           <div class="aufgabe">
   <div class="aufgabe-header">
@@ -615,6 +624,8 @@ export async function GET(_request: Request, { params }: RouteParams) {
   <p>Bearbeite in der kostenlosen Lernplattform <strong>PortSwigger Web Security Academy</strong> das erste SQL-Injection-Lab (nur in dieser dafür vorgesehenen Umgebung – Angriffe auf fremde Systeme sind strafbar). Beschreibe in eigenen Worten, warum der Angriff funktioniert und welche Zeile im Server die Lücke verursacht haben könnte.</p>
 </div>
         </div>
+</div>
+</details>
       </section>
 
       <section class="section section-quiz">
